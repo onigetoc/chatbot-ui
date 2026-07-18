@@ -111,15 +111,35 @@ export function saveSelections(selections: UserSelections): void {
   localStorage.setItem(SELECTIONS_KEY, JSON.stringify(selections));
 }
 
-/** Get the API base URL for a provider from cached data */
+/** Fallback base URLs for common providers when cache is unavailable */
+const FALLBACK_URLS: Record<string, string> = {
+  google: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  openai: 'https://api.openai.com/v1',
+  anthropic: 'https://api.anthropic.com/v1',
+  opencode: 'https://opencode.ai/zen/v1',
+  groq: 'https://api.groq.com/openai/v1',
+  mistral: 'https://api.mistral.ai/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+  xai: 'https://api.x.ai/v1',
+  openrouter: 'https://openrouter.ai/api/v1',
+  together: 'https://api.together.xyz/v1',
+  fireworks: 'https://api.fireworks.ai/inference/v1',
+  perplexity: 'https://api.perplexity.ai',
+  cerebras: 'https://api.cerebras.ai/v1',
+  sambanova: 'https://api.sambanova.ai/v1',
+  cohere: 'https://api.cohere.ai/v1',
+};
+
+/** Get the API base URL for a provider from cached data, with fallback */
 export function getProviderBaseURL(providerId: string): string | undefined {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return undefined;
-    const entry: CacheEntry = JSON.parse(raw);
-    const provider = entry.data[providerId];
-    return provider?.api || undefined;
-  } catch {
-    return undefined;
-  }
+    if (raw) {
+      const entry: CacheEntry = JSON.parse(raw);
+      const provider = entry.data[providerId];
+      if (provider?.api) return provider.api;
+    }
+  } catch { /* ignore */ }
+  // Fallback for common providers
+  return FALLBACK_URLS[providerId];
 }

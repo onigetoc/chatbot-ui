@@ -60,8 +60,6 @@ export function ChatArea({ theme }: Props) {
   const [chatError, setChatError] = useState<string | null>(null)
   const isDark = theme === 'dark'
 
-  const activeConv = conversations.find((c) => c.id === activeId)
-
   useEffect(() => {
     activeIdRef.current = activeId
   }, [activeId])
@@ -98,21 +96,27 @@ export function ChatArea({ theme }: Props) {
     return getProviderBaseURL(providerId) || ''
   }
 
-  const { messages, input, setInput, handleSubmit: rawHandleSubmit, isLoading, stop, setMessages } = useChat({
-    api: '/api/chat',
-    body: {
-      model: selectedModel,
-      apiKey: getApiKeyForModel(selectedModel),
-      baseURL: getBaseURLForModel(selectedModel),
-    },
-    initialMessages: activeConv?.messages.map((m) => ({
+  // Stable initial messages — only recompute when activeId actually changes
+  const initialMessagesRef = useRef<{ id: string; role: 'user' | 'assistant' | 'system'; content: string }[]>([])
+  const lastLoadedIdRef = useRef<string | null>(null)
+
+  if (activeId !== lastLoadedIdRef.current) {
+    lastLoadedIdRef.current = activeId
+    const conv = conversations.find((c) => c.id === activeId)
+    initialMessagesRef.current = conv?.messages.map((m) => ({
       id: m.id,
-      role: m.role,
+      role: m.role as 'user' | 'assistant' | 'system',
       content: m.content,
-    })) ?? [],
+    })) ?? []
+  }
+
+  const { messages, input, setInput, handleSubmit: rawHandleSubmit, isLoading, stop } = useChat({
+    id: activeId || 'new',
+    api: '/api/chat',
+    initialMessages: initialMessagesRef.current,
     onError: (error) => {
       console.error('[chat] useChat error:', error.message)
-      setChatError(error.message || 'An error occurred')
+      setChatError((prev) => prev ? prev : (error.message || 'An error occurred'))
     },
     onFinish: () => {
       const conversationId = activeIdRef.current
@@ -124,6 +128,7 @@ export function ChatArea({ theme }: Props) {
 
   // Wrap handleSubmit to always send fresh body with current model + key + baseURL
   const handleSubmit = (e: FormEvent, attachments?: FileAttachment[]) => {
+    setChatError(null)
     const options: Record<string, unknown> = {
       body: {
         model: selectedModel,
@@ -148,29 +153,10 @@ export function ChatArea({ theme }: Props) {
     [messages],
   )
 
-  // Sync messages to store on every update
+  // Keep ref up to date for onFinish callback
   useEffect(() => {
-    const nextMessages = toStoreMessages(messages)
-    latestStoreMessagesRef.current = nextMessages
-
-    if (activeIdRef.current) {
-      updateMessages(activeIdRef.current, nextMessages)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    latestStoreMessagesRef.current = toStoreMessages(messages)
   }, [messages])
-
-  // When active conversation changes, load its messages
-  const prevActiveId = useRef<string | null>(null)
-  useEffect(() => {
-    if (activeId !== prevActiveId.current) {
-      prevActiveId.current = activeId
-      const conv = conversations.find((c) => c.id === activeId)
-      latestStoreMessagesRef.current = conv?.messages ?? []
-      setMessages(
-        conv?.messages.map((m) => ({ id: m.id, role: m.role, content: m.content })) ?? []
-      )
-    }
-  }, [activeId, conversations, setMessages])
 
   // Track whether the user has scrolled away from the latest message.
   useEffect(() => {
