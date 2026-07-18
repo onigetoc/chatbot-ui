@@ -11,11 +11,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "kill" : "npx kill-port 3000, 3001, 3002, 3003"
+    "kill": "npx kill-port 3000, 3001, 3002, 3003"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^0.2.16",
+    "@radix-ui/react-dialog": "^1.1.19",
     "ai": "^4.3.19",
+    "clsx": "^2.1.1",
     "hono": "^4.0.0",
     "lucide-react": "^0.469.0",
     "react": "^19.2.5",
@@ -23,6 +25,7 @@
     "react-markdown": "^9.0.0",
     "react-syntax-highlighter": "^15.5.0",
     "remark-gfm": "^4.0.0",
+    "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

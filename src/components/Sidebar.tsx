@@ -1,16 +1,14 @@
 import { MessageSquarePlus, MoonStar, Settings, SunMedium, Trash2 } from 'lucide-react'
 import { useChatStore } from '../store/chatStore'
 import { IconTooltip } from './IconTooltip'
-import type { AppView } from '../App'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   onOpenSettings: () => void
-  currentView: AppView
 }
 
-export function Sidebar({ isOpen, onClose, onOpenSettings, currentView }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onOpenSettings }: SidebarProps) {
   const {
     conversations,
     activeId,
@@ -109,13 +107,9 @@ export function Sidebar({ isOpen, onClose, onOpenSettings, currentView }: Sideba
           <button
             onClick={onOpenSettings}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-              currentView === 'settings'
-                ? isDark
-                  ? 'bg-zinc-800 text-white'
-                  : 'bg-white text-zinc-900 ring-1 ring-zinc-300 shadow-sm'
-                : isDark
-                  ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+              isDark
+                ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
             }`}
           >
             <Settings size={18} />

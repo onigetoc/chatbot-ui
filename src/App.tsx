@@ -6,12 +6,10 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { useChatStore } from './store/chatStore'
 import './index.css'
 
-export type AppView = 'chat' | 'settings'
-
 export default function App() {
   const theme = useChatStore((state) => state.theme)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [view, setView] = useState<AppView>('chat')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -26,32 +24,26 @@ export default function App() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onOpenSettings={() => {
-          setView('settings')
+          setSettingsOpen(true)
           setSidebarOpen(false)
         }}
-        currentView={view}
       />
       <main className="relative flex-1 overflow-hidden">
-        {view === 'chat' && (
-          <>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className={`absolute left-4 top-4 z-20 rounded-md p-2 transition-colors md:hidden ${
-                isDark
-                  ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                  : 'text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900'
-              }`}
-              aria-label="Open sidebar"
-            >
-              <PanelLeft size={20} />
-            </button>
-            <ChatArea theme={theme} />
-          </>
-        )}
-        {view === 'settings' && (
-          <SettingsPanel theme={theme} onClose={() => setView('chat')} />
-        )}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className={`absolute left-4 top-4 z-20 rounded-md p-2 transition-colors md:hidden ${
+            isDark
+              ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              : 'text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900'
+          }`}
+          aria-label="Open sidebar"
+        >
+          <PanelLeft size={20} />
+        </button>
+        <ChatArea theme={theme} />
       </main>
+
+      <SettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   )
 }

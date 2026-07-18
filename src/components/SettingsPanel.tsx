@@ -1,18 +1,24 @@
 import { useState } from 'react'
-import { ArrowLeft, Boxes, Key } from 'lucide-react'
+import { Boxes, Key } from 'lucide-react'
 import ModelsSection from '../providers/frontend/ModelsSection'
 import ApiKeysSection from '../providers/frontend/ApiKeysSection'
-import type { ThemeMode } from '../store/chatStore'
+import { useChatStore } from '../store/chatStore'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from './ui/dialog'
 
 type Tab = 'models' | 'keys'
 
-interface SettingsPanelProps {
-  theme: ThemeMode
-  onClose: () => void
+interface SettingsDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function SettingsPanel({ theme, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ open, onOpenChange }: SettingsDialogProps) {
   const [activeTab, setActiveTab] = useState<Tab>('models')
+  const theme = useChatStore((state) => state.theme)
   const isDark = theme === 'dark'
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -21,50 +27,57 @@ export function SettingsPanel({ theme, onClose }: SettingsPanelProps) {
   ]
 
   return (
-    <div className={`flex h-full flex-col ${isDark ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
-      {/* Header */}
-      <div className={`flex items-center gap-3 border-b px-6 py-4 ${isDark ? 'border-zinc-800' : 'border-zinc-300'}`}>
-        <button
-          onClick={onClose}
-          className={`rounded-lg p-2 transition-colors ${isDark ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white' : 'text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900'}`}
-          aria-label="Back to chat"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-semibold">Settings</h1>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={`flex flex-row max-w-7xl h-[92vh] overflow-hidden ${
+          isDark
+            ? 'bg-zinc-900 border-zinc-700 text-white'
+            : 'bg-white border-zinc-300 text-zinc-900'
+        }`}
+      >
+        {/* Hidden title for accessibility */}
+        <DialogTitle className="sr-only">Settings</DialogTitle>
 
-      {/* Tabs */}
-      <div className={`flex gap-1 border-b px-6 pt-2 ${isDark ? 'border-zinc-800' : 'border-zinc-300'}`}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? isDark
-                  ? 'bg-zinc-900 text-white border-b-2 border-blue-500'
-                  : 'bg-white text-zinc-900 border-b-2 border-blue-600'
-                : isDark
-                  ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
-                  : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+        {/* Left sidebar nav */}
+        <nav
+          className={`flex w-56 shrink-0 flex-col border-r py-6 px-3 ${
+            isDark ? 'border-zinc-700' : 'border-zinc-200'
+          }`}
+        >
+          <span
+            className={`mb-3 px-3 text-xs font-semibold uppercase tracking-wider ${
+              isDark ? 'text-zinc-500' : 'text-zinc-400'
             }`}
           >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+            Settings
+          </span>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        {activeTab === 'models' && (
-          <ModelsSection isDark={isDark} />
-        )}
-        {activeTab === 'keys' && (
-          <ApiKeysSection isDark={isDark} />
-        )}
-      </div>
-    </div>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? isDark
+                    ? 'bg-zinc-800 text-white'
+                    : 'bg-zinc-100 text-zinc-900'
+                  : isDark
+                    ? 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                    : 'text-zinc-600 hover:bg-zinc-100/70 hover:text-zinc-900'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Main content area */}
+        <div className="flex-1 overflow-y-auto px-8 py-6">
+          {activeTab === 'models' && <ModelsSection isDark={isDark} />}
+          {activeTab === 'keys' && <ApiKeysSection isDark={isDark} />}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

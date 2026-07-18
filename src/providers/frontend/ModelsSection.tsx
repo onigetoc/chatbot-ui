@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { Check, RefreshCw, Info } from 'lucide-react';
 import { getModelsDevData, clearModelsCache, loadSelections, saveSelections } from './models-cache';
 import { MODELS_CHANGED_EVENT } from '../../hooks/useModels';
+import { POPULAR_PROVIDERS } from './popular-providers';
 
 interface ModelInfo {
   id: string;
@@ -35,7 +36,7 @@ interface ModelsSectionProps {
 
 export default function ModelsSection({ isDark, onModelsChanged }: ModelsSectionProps) {
   const [providers, setProviders] = useState<ProviderGroup[]>([]);
-  const [popularProviders] = useState(['opencode', 'openai', 'anthropic', 'google', 'x-ai', 'mistral']);
+  const popularProviders = POPULAR_PROVIDERS;
   const [selectedProviderId, setSelectedProviderId] = useState<string>('opencode');
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
