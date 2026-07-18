@@ -1,0 +1,79 @@
+{
+  "sidebar": {
+    "chats": "Chats",
+    "newChat": "Nouveau chat",
+    "noConversations": "Aucune conversation.",
+    "chatOptions": "Options du chat",
+    "editChatName": "Renommer le chat",
+    "delete": "Supprimer",
+    "modelsAndSettings": "Modèles & Paramètres",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre"
+  },
+  "chat": {
+    "newChat": "Nouveau Chat",
+    "startConversation": "Démarrer une conversation",
+    "selectModelHint": "Sélectionnez un modèle et tapez un message ci-dessous",
+    "scrollToBottom": "Défiler vers le bas",
+    "editConversationName": "Modifier le nom de la conversation",
+    "renameConversation": "Renommer la conversation"
+  },
+  "composer": {
+    "placeholder": "Tapez un message...",
+    "send": "Envoyer",
+    "stop": "Arrêter"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "general": "Général",
+    "models": "Modèles",
+    "apiKeys": "Clés API",
+    "language": "Langue",
+    "languageDescription": "Choisissez la langue d'affichage de l'interface.",
+    "english": "English",
+    "french": "Français"
+  },
+  "modelsSection": {
+    "title": "Fournisseurs & Modèles",
+    "subtitle": "Choisissez les modèles IA pour votre interface de chat",
+    "info": "Sélectionnez les fournisseurs à gauche, choisissez les modèles à droite. Données de models.dev, cache 24h.",
+    "retry": "Réessayer",
+    "providers": "Fournisseurs",
+    "search": "Rechercher...",
+    "popular": "Populaires",
+    "modelsCount": "Modèles ({{count}} sélectionnés)",
+    "free": "Gratuit",
+    "filterModels": "Filtrer les modèles...",
+    "selectProvider": "Sélectionnez un fournisseur à gauche",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "noModelsMatch": "Aucun modèle trouvé"
+  },
+  "keysSection": {
+    "title": "Clés API",
+    "subtitle": "Gérez vos clés API de fournisseurs LLM. Les clés sont stockées localement dans votre navigateur.",
+    "addUpdate": "Ajouter / Modifier une clé API",
+    "selectProvider": "Sélectionnez un fournisseur...",
+    "pasteKey": "Collez votre clé API...",
+    "selectFirst": "Sélectionnez d'abord un fournisseur",
+    "saveKey": "Enregistrer",
+    "getApiKey": "Obtenir une clé API",
+    "googleAiStudioFree": "Google AI Studio (free tier)",
+    "configured": "Configuré",
+    "configuredProviders": "Fournisseurs configurés ({{count}})",
+    "noKeysYet": "Aucune clé API configurée.",
+    "noKeysHint": "Ajoutez une clé de fournisseur ci-dessus pour commencer.",
+    "detectKeys": "Détecter les clés système",
+    "scanButton": "Scanner les clés",
+    "scanDescription": "Scanne les variables d'environnement du système pour trouver les clés API connues.",
+    "noKeysFound": "Aucune clé API trouvée dans les variables d'environnement.",
+    "addToChatbot": "Ajouter au ChatBot",
+    "searchProviders": "Rechercher des fournisseurs...",
+    "allProviders": "Tous les fournisseurs",
+    "noProvidersFound": "Aucun fournisseur trouvé",
+    "enterNewKey": "Entrez une nouvelle clé pour mettre à jour, ou laissez tel quel.",
+    "keySaved": "Clé {{name}} enregistrée",
+    "keyRemoved": "Clé {{name}} supprimée",
+    "keyAdded": "Clé {{name}} ajoutée depuis {{envVar}}"
+  }
+}

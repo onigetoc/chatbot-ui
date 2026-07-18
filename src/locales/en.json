@@ -1,0 +1,79 @@
+{
+  "sidebar": {
+    "chats": "Chats",
+    "newChat": "New chat",
+    "noConversations": "No conversations yet.",
+    "chatOptions": "Chat options",
+    "editChatName": "Edit chat name",
+    "delete": "Delete",
+    "modelsAndSettings": "Models & Settings",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode"
+  },
+  "chat": {
+    "newChat": "New Chat",
+    "startConversation": "Start a conversation",
+    "selectModelHint": "Select a model and type a message below",
+    "scrollToBottom": "Scroll to bottom",
+    "editConversationName": "Edit conversation name",
+    "renameConversation": "Rename conversation"
+  },
+  "composer": {
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "stop": "Stop"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "models": "Models",
+    "apiKeys": "API Keys",
+    "language": "Language",
+    "languageDescription": "Choose the display language for the interface.",
+    "english": "English",
+    "french": "Français"
+  },
+  "modelsSection": {
+    "title": "Providers & Models",
+    "subtitle": "Choose AI models for your chat interface",
+    "info": "Select providers on the left, pick models on the right. Data from models.dev, cached 24h.",
+    "retry": "Retry",
+    "providers": "Providers",
+    "search": "Search...",
+    "popular": "Popular",
+    "modelsCount": "Models ({{count}} selected)",
+    "free": "Free",
+    "filterModels": "Filter models...",
+    "selectProvider": "Select a provider from the left",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "noModelsMatch": "No models match"
+  },
+  "keysSection": {
+    "title": "API Keys",
+    "subtitle": "Manage your LLM provider API keys. Keys are stored locally in your browser.",
+    "addUpdate": "Add / Update API Key",
+    "selectProvider": "Select a provider...",
+    "pasteKey": "Paste your API key...",
+    "selectFirst": "Select a provider first",
+    "saveKey": "Save Key",
+    "getApiKey": "Get an API key",
+    "googleAiStudioFree": "Google AI Studio (free tier)",
+    "configured": "Configured",
+    "configuredProviders": "Configured Providers ({{count}})",
+    "noKeysYet": "No API keys configured yet.",
+    "noKeysHint": "Add a provider key above to start chatting.",
+    "detectKeys": "Detect System API Keys",
+    "scanButton": "Scan API Keys",
+    "scanDescription": "Scan the host machine's environment variables for known LLM provider API keys.",
+    "noKeysFound": "No API keys found in system environment variables.",
+    "addToChatbot": "Add to ChatBot",
+    "searchProviders": "Search providers...",
+    "allProviders": "All Providers",
+    "noProvidersFound": "No providers found",
+    "enterNewKey": "Enter a new key to update, or leave as-is.",
+    "keySaved": "{{name}} key saved",
+    "keyRemoved": "{{name}} key removed",
+    "keyAdded": "{{name}} key added from {{envVar}}"
+  }
+}

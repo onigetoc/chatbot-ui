@@ -9,6 +9,7 @@
  * `onModelsChanged` callback.
  */
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, RefreshCw, Info } from 'lucide-react';
 import { getModelsDevData, clearModelsCache, loadSelections, saveSelections } from './models-cache';
 import { MODELS_CHANGED_EVENT } from '../../hooks/useModels';
@@ -35,6 +36,7 @@ interface ModelsSectionProps {
 }
 
 export default function ModelsSection({ isDark, onModelsChanged }: ModelsSectionProps) {
+  const { t } = useTranslation();
   const [providers, setProviders] = useState<ProviderGroup[]>([]);
   const popularProviders = POPULAR_PROVIDERS;
   const [selectedProviderId, setSelectedProviderId] = useState<string>('opencode');
@@ -136,9 +138,9 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Providers & Models</h1>
+          <h1 className="text-2xl font-semibold">{t('modelsSection.title')}</h1>
           <p className={`mt-1 text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            Choose AI models for your chat interface
+            {t('modelsSection.subtitle')}
           </p>
         </div>
         <button type="button" onClick={handleRefresh} disabled={refreshing}
@@ -152,7 +154,7 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
         <div className="flex items-start gap-2">
           <Info className={`mt-0.5 h-4 w-4 shrink-0 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
           <div className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
-            <p>Select providers on the left, pick models on the right. Data from models.dev, cached 24h.</p>
+            <p>{t('modelsSection.info')}</p>
           </div>
         </div>
       </div>
@@ -162,16 +164,16 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
       ) : error ? (
         <div className={`rounded-lg border p-6 text-center ${isDark ? 'border-red-900 bg-red-950/50 text-red-300' : 'border-red-200 bg-red-50 text-red-700'}`}>
           <p>{error}</p>
-          <button type="button" onClick={loadProviders} className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">Retry</button>
+          <button type="button" onClick={loadProviders} className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">{t('modelsSection.retry')}</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Providers */}
           <div className={`rounded-lg border p-4 ${isDark ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-300 bg-zinc-200'}`}>
-            <h3 className="mb-3 text-sm font-semibold">Providers</h3>
+            <h3 className="mb-3 text-sm font-semibold">{t('modelsSection.providers')}</h3>
             <div className="relative mb-2">
               <input type="text" value={providerSearch} onChange={(e) => setProviderSearch(e.target.value)}
-                placeholder="Search..." className={`w-full rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-500' : 'border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400'}`} />
+                placeholder={t('modelsSection.search')} className={`w-full rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-500' : 'border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400'}`} />
             </div>
             <div className="max-h-96 space-y-1 overflow-y-auto">
               {filteredProviders.map((provider) => {
@@ -186,7 +188,7 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
                     }`}>
                     <div className="flex items-center gap-2">
                       <span>{provider.name}</span>
-                      {isPopular && <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>Popular</span>}
+                      {isPopular && <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>{t('modelsSection.popular')}</span>}
                     </div>
                     <div className="flex items-center gap-1.5">
                       {hasSelected && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
@@ -201,20 +203,20 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
           {/* Models */}
           <div className={`lg:col-span-2 rounded-lg border p-4 ${isDark ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-300 bg-zinc-200'}`}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Models ({selectedModels.size} selected)</h3>
+              <h3 className="text-sm font-semibold">{t('modelsSection.modelsCount', { count: selectedModels.size })}</h3>
               <button type="button" onClick={() => setModelSearch(modelSearch === 'free' ? '' : 'free')}
                 className={`rounded px-2 py-1 text-xs font-medium transition ${
                   modelSearch === 'free' ? (isDark ? 'bg-emerald-500/30 text-emerald-300 ring-1 ring-emerald-500/50' : 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300')
                     : (isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300')
                 }`}>
-                Free
+                {t('modelsSection.free')}
               </button>
             </div>
 
             {selectedProvider && (
               <div className="relative mb-3">
                 <input type="text" value={modelSearch} onChange={(e) => setModelSearch(e.target.value)}
-                  placeholder="Filter models..." className={`w-full rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-500' : 'border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400'}`} />
+                  placeholder={t('modelsSection.filterModels')} className={`w-full rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-500' : 'border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400'}`} />
                 {modelSearch && (
                   <button type="button" onClick={() => setModelSearch('')} className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 ${isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-700'}`}>
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -225,7 +227,7 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
 
             {!selectedProvider ? (
               <div className={`rounded-lg border p-8 text-center ${isDark ? 'border-zinc-800 text-zinc-500' : 'border-zinc-200 text-zinc-400'}`}>
-                Select a provider from the left
+                {t('modelsSection.selectProvider')}
               </div>
             ) : (
               <div className="max-h-96 space-y-4 overflow-y-auto">
@@ -234,11 +236,11 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
                     <h4 className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{selectedProvider.name}</h4>
                     <button type="button" onClick={toggleAllVisible}
                       className={`rounded px-2 py-1 text-xs font-medium transition ${isDark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'}`}>
-                      {filteredModels.every(m => selectedModels.has(m.id)) ? 'Deselect All' : 'Select All'}
+                      {filteredModels.every(m => selectedModels.has(m.id)) ? t('modelsSection.deselectAll') : t('modelsSection.selectAll')}
                     </button>
                   </div>
                   {filteredModels.length === 0 ? (
-                    <p className={`text-center text-sm py-6 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>No models match</p>
+                    <p className={`text-center text-sm py-6 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{t('modelsSection.noModelsMatch')}</p>
                   ) : (
                     <div className="grid grid-cols-1 gap-1 md:grid-cols-2">
                       {filteredModels.map((model) => {

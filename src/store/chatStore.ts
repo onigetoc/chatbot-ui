@@ -18,6 +18,7 @@ interface ChatStore {
   toggleTheme: () => void
   createConversation: () => string
   deleteConversation: (id: string) => void
+  renameConversation: (id: string, title: string) => void
   updateMessages: (id: string, messages: Message[]) => void
 }
 
@@ -49,6 +50,14 @@ export const useChatStore = create<ChatStore>()(
 
         set((state) => ({ conversations: [conv, ...state.conversations], activeId: id }))
         return id
+      },
+
+      renameConversation: (id, title) => {
+        set((state) => ({
+          conversations: state.conversations.map((conversation) =>
+            conversation.id !== id ? conversation : { ...conversation, title, updatedAt: Date.now() }
+          ),
+        }))
       },
 
       deleteConversation: (id) => {

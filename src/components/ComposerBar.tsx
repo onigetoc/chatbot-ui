@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { KeyboardEvent, DragEvent } from 'react'
 import { Send, Square, Paperclip, Image as ImageIcon, X } from 'lucide-react'
 import { ModelSelector } from './ModelSelector'
@@ -47,6 +48,7 @@ export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, them
   const imageInputRef = useRef<HTMLInputElement>(null)
   const { models } = useModels()
   const { selectedModel, setSelectedModel } = useChatStore()
+  const { t } = useTranslation()
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
@@ -189,7 +191,7 @@ export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, them
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isDragging ? 'Drop files here...' : 'Message… (Enter to send, Shift+Enter for new line)'}
+            placeholder={isDragging ? 'Drop files here...' : t('composer.placeholder')}
             rows={1}
             disabled={isLoading}
             className={`min-h-[52px] max-h-[220px] resize-none bg-transparent text-[1rem] leading-7 outline-none placeholder:text-zinc-500 ${isDark ? 'text-white' : 'text-zinc-900'}`}
@@ -242,11 +244,11 @@ export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, them
                 onSelect={setSelectedModel}
                 theme={theme}
               />
-              <IconTooltip label={isLoading ? 'Stop' : 'Send'}>
+              <IconTooltip label={isLoading ? t('composer.stop') : t('composer.send')}>
                 <button
                   onClick={isLoading ? onStop : handleSend}
                   disabled={!isLoading && !input.trim() && attachments.length === 0}
-                  aria-label={isLoading ? 'Stop' : 'Send'}
+                  aria-label={isLoading ? t('composer.stop') : t('composer.send')}
                   className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
                     isLoading
                       ? 'bg-red-600 text-white hover:bg-red-500'

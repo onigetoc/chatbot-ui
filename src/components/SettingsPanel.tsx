@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Boxes, Key } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Boxes, Key, Settings2 } from 'lucide-react'
 import ModelsSection from '../providers/frontend/ModelsSection'
 import ApiKeysSection from '../providers/frontend/ApiKeysSection'
+import { GeneralSettings } from './GeneralSettings'
 import { useChatStore } from '../store/chatStore'
 import {
   Dialog,
@@ -9,7 +11,7 @@ import {
   DialogTitle,
 } from './ui/dialog'
 
-type Tab = 'models' | 'keys'
+type Tab = 'general' | 'models' | 'keys'
 
 interface SettingsDialogProps {
   open: boolean
@@ -17,13 +19,15 @@ interface SettingsDialogProps {
 }
 
 export function SettingsPanel({ open, onOpenChange }: SettingsDialogProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('models')
+  const [activeTab, setActiveTab] = useState<Tab>('general')
+  const { t } = useTranslation()
   const theme = useChatStore((state) => state.theme)
   const isDark = theme === 'dark'
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'models', label: 'Models', icon: <Boxes size={18} /> },
-    { id: 'keys', label: 'API Keys', icon: <Key size={18} /> },
+    { id: 'general', label: t('settings.general'), icon: <Settings2 size={18} /> },
+    { id: 'models', label: t('settings.models'), icon: <Boxes size={18} /> },
+    { id: 'keys', label: t('settings.apiKeys'), icon: <Key size={18} /> },
   ]
 
   return (
@@ -49,7 +53,7 @@ export function SettingsPanel({ open, onOpenChange }: SettingsDialogProps) {
               isDark ? 'text-zinc-500' : 'text-zinc-400'
             }`}
           >
-            Settings
+            {t('settings.title')}
           </span>
 
           {tabs.map((tab) => (
@@ -74,6 +78,7 @@ export function SettingsPanel({ open, onOpenChange }: SettingsDialogProps) {
 
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
+          {activeTab === 'general' && <GeneralSettings isDark={isDark} />}
           {activeTab === 'models' && <ModelsSection isDark={isDark} />}
           {activeTab === 'keys' && <ApiKeysSection isDark={isDark} />}
         </div>

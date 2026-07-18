@@ -6,6 +6,7 @@
  * sends the relevant key to the server in the request body.
  */
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Check,
   ChevronDown,
@@ -52,7 +53,7 @@ export function getConfiguredProviderIds(): string[] {
 // ─── Fallback providers (in case models.dev fetch fails) ─────────────
 const FALLBACK_PROVIDERS: { id: string; name: string; url?: string }[] = [
   { id: 'anthropic', name: 'Anthropic (Claude)', url: 'https://console.anthropic.com/' },
-  { id: 'google', name: 'Google (Gemini)', url: 'https://aistudio.google.com/app/apikey' },
+  { id: 'google', name: 'Google (Gemini)', url: 'https://aistudio.google.com/api-keys' },
   { id: 'openai', name: 'OpenAI (GPT)', url: 'https://platform.openai.com/api-keys' },
   { id: 'opencode', name: 'OpenCode (Zen)', url: 'https://opencode.ai/auth' },
   { id: 'groq', name: 'Groq', url: 'https://console.groq.com/keys' },
@@ -87,6 +88,7 @@ interface ApiKeysSectionProps {
 }
 
 export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
+  const { t } = useTranslation()
   const [storedKeys, setStoredKeys] = useState<Record<string, string>>(loadStoredKeys)
   const [providers, setProviders] = useState<ProviderOption[]>([])
   const [selectedProvider, setSelectedProvider] = useState<ProviderOption | null>(null)
@@ -207,7 +209,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
     if (!selectedProvider || !keyInput.trim()) return
     // Don't save if it's the masked placeholder
     if (isMaskedValue(keyInput)) {
-      setFeedback({ type: 'error', msg: 'Enter a new key to update, or leave as-is.' })
+      setFeedback({ type: 'error', msg: t('keysSection.enterNewKey') })
       return
     }
 
@@ -215,7 +217,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
     saveStoredKeys(next)
     setStoredKeys(next)
 
-    setFeedback({ type: 'success', msg: `${selectedProvider.name} key saved` })
+    setFeedback({ type: 'success', msg: t('keysSection.keySaved', { name: selectedProvider.name }) })
     setKeyInput('')
     setSelectedProvider(null)
     setShowKey(false)
@@ -228,7 +230,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
     setStoredKeys(next)
 
     const label = providers.find((p) => p.id === providerId)?.name || providerId
-    setFeedback({ type: 'success', msg: `${label} key removed` })
+    setFeedback({ type: 'success', msg: t('keysSection.keyRemoved', { name: label }) })
 
     // Clear input if we're removing the currently selected provider
     if (selectedProvider?.id === providerId) {
@@ -268,7 +270,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
         const next = { ...storedKeys, [data.provider]: data.key }
         saveStoredKeys(next)
         setStoredKeys(next)
-        setFeedback({ type: 'success', msg: `${data.label} key added from ${envVar}` })
+        setFeedback({ type: 'success', msg: t('keysSection.keyAdded', { name: data.label, envVar }) })
       }
     } catch (err) {
       setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to add key' })
@@ -277,9 +279,9 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
   return (
     <div>
-      <h1 className={`text-xl font-semibold mb-1 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>API Keys</h1>
+      <h1 className={`text-xl font-semibold mb-1 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>{t('keysSection.title')}</h1>
       <p className={`text-sm mb-6 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
-        Manage your LLM provider API keys. Keys are stored locally in your browser.
+        {t('keysSection.subtitle')}
       </p>
 
       {/* Feedback */}
@@ -296,7 +298,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
       {/* Add / Update API Key */}
       <div className={`rounded-xl border p-4 mb-6 ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
-        <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>Add / Update API Key</h3>
+        <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>{t('keysSection.addUpdate')}</h3>
         <div className="flex flex-col gap-3">
           {/* Provider searchable dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -314,13 +316,13 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                   <span className="flex items-center gap-2">
                     {selectedProvider.name}
                     {selectedProvider.isPopular && (
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>Popular</span>
+                      <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>{t('modelsSection.popular')}</span>
                     )}
                     {storedKeys[selectedProvider.id] && (
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>Configured</span>
+                      <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>{t('keysSection.configured')}</span>
                     )}
                   </span>
-                ) : 'Select a provider...'}
+                ) : t('keysSection.selectProvider')}
               </span>
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
             </button>
@@ -339,7 +341,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search providers..."
+                      placeholder={t('keysSection.searchProviders')}
                       className={`w-full rounded-md border-none py-2 pl-8 pr-3 text-sm outline-none ${
                         isDark ? 'bg-zinc-900 text-zinc-200 placeholder:text-zinc-500' : 'bg-zinc-50 text-zinc-800 placeholder:text-zinc-400'
                       }`}
@@ -353,7 +355,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                   {popularFiltered.length > 0 && (
                     <>
                       <div className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                        Popular
+                        {t('modelsSection.popular')}
                       </div>
                       {popularFiltered.map((provider) => (
                         <button
@@ -380,7 +382,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                         <div className={`mx-2 my-1 border-t ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`} />
                       )}
                       <div className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                        All Providers
+                        {t('keysSection.allProviders')}
                       </div>
                       {othersFiltered.map((provider) => (
                         <button
@@ -402,7 +404,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
                   {filteredProviders.length === 0 && (
                     <p className={`px-3 py-4 text-center text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                      No providers found
+                      {t('keysSection.noProvidersFound')}
                     </p>
                   )}
                 </div>
@@ -425,7 +427,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                     }
                   }}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
-                  placeholder={selectedProvider ? 'Paste your API key...' : 'Select a provider first'}
+                  placeholder={selectedProvider ? t('keysSection.pasteKey') : t('keysSection.selectFirst')}
                   disabled={!selectedProvider}
                   className={`w-full rounded-lg border px-3 py-2.5 pr-10 text-sm font-mono ${isDark ? 'border-zinc-700 bg-zinc-800 text-zinc-200 placeholder:text-zinc-600 disabled:opacity-40' : 'border-zinc-300 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 disabled:opacity-40'}`}
                 />
@@ -434,11 +436,20 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                 </button>
               </div>
               {selectedProvider?.url && (
-                <a href={selectedProvider.url} target="_blank" rel="noopener noreferrer"
-                  className={`inline-flex items-center gap-1.5 text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
-                  <ExternalLink className="h-3 w-3" />
-                  Get an API key
-                </a>
+                <div className="flex flex-col gap-1">
+                  <a href={selectedProvider.url} target="_blank" rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1.5 text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
+                    <ExternalLink className="h-3 w-3" />
+                    {t('keysSection.getApiKey')}
+                  </a>
+                  {selectedProvider.id === 'google' && (
+                    <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 text-xs ${isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                      <ExternalLink className="h-3 w-3" />
+                      {t('keysSection.googleAiStudioFree')}
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 
@@ -449,7 +460,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                   : isDark ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-emerald-600 text-white hover:bg-emerald-500'
               }`}>
               <Plus className="inline h-4 w-4 mr-1" />
-              Save Key
+              {t('keysSection.saveKey')}
             </button>
           </div>
         </div>
@@ -459,7 +470,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
       {configuredProviders.length > 0 && (
         <div className={`rounded-xl border mb-6 ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
           <h3 className={`px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-            Configured Providers ({configuredProviders.length})
+            {t('keysSection.configuredProviders', { count: configuredProviders.length })}
           </h3>
           {configuredProviders.map((p) => (
             <div key={p.id} className={`flex items-center justify-between px-4 py-2.5 ${isDark ? 'hover:bg-zinc-800/60' : 'hover:bg-zinc-50'}`}>
@@ -483,15 +494,15 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
       {configuredProviders.length === 0 && (
         <div className={`rounded-xl border p-6 text-center mb-6 ${isDark ? 'border-zinc-800 text-zinc-500' : 'border-zinc-300 text-zinc-400'}`}>
-          <p className="text-sm">No API keys configured yet.</p>
-          <p className="text-xs mt-1">Add a provider key above to start chatting.</p>
+          <p className="text-sm">{t('keysSection.noKeysYet')}</p>
+          <p className="text-xs mt-1">{t('keysSection.noKeysHint')}</p>
         </div>
       )}
 
       {/* Scan System Environment Variables */}
       <div className={`rounded-xl border p-4 ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
         <div className="flex items-center justify-between mb-1">
-          <h3 className={`text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>Detect System API Keys</h3>
+          <h3 className={`text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>{t('keysSection.detectKeys')}</h3>
           <button
             type="button"
             onClick={handleScan}
@@ -503,11 +514,11 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
             }`}
           >
             <ScanSearch className={`h-4 w-4 ${scanning ? 'animate-spin' : ''}`} />
-            Scan API Keys
+            {t('keysSection.scanButton')}
           </button>
         </div>
         <p className={`text-xs mb-3 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-          Scan the host machine's environment variables for known LLM provider API keys.
+          {t('keysSection.scanDescription')}
         </p>
 
         {/* Scan error */}
@@ -522,7 +533,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
           <div className={`rounded-lg border ${isDark ? 'border-zinc-700' : 'border-zinc-300'}`}>
             {scannedKeys.length === 0 ? (
               <p className={`px-4 py-4 text-center text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                No API keys found in system environment variables.
+                {t('keysSection.noKeysFound')}
               </p>
             ) : (
               scannedKeys.map((key, idx) => {
@@ -541,7 +552,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                         </span>
                         {alreadyConfigured && (
                           <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
-                            configured
+                            {t('keysSection.configured').toLowerCase()}
                           </span>
                         )}
                       </div>
@@ -556,7 +567,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                         className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-500"
                       >
                         <Plus className="h-3.5 w-3.5" />
-                        Add to ChatBot
+                        {t('keysSection.addToChatbot')}
                       </button>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowDown, MessageSquare } from 'lucide-react'
 import { useChat } from 'ai/react'
 import { MemoizedMessageBubble, MemoizedTypingIndicator } from './MessageBubble'
@@ -6,6 +7,7 @@ import { ComposerBar, type FileAttachment } from './ComposerBar'
 import { Toast } from './Toast'
 import { IconTooltip } from './IconTooltip'
 import { useChatStore, type ThemeMode } from '../store/chatStore'
+import { ChatHeader } from './ChatHeader'
 import { getStoredApiKey } from '../providers/frontend/ApiKeysSection'
 import { getProviderBaseURL } from '../providers/frontend/models-cache'
 import type { Message } from '../types'
@@ -49,6 +51,7 @@ function toStoreMessages(msgs: { id: string; role: string; content: string }[]):
 
 export function ChatArea({ theme }: Props) {
   const { activeId, conversations, selectedModel, createConversation, updateMessages, setActiveId } = useChatStore()
+  const { t } = useTranslation()
   const scrollRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const activeIdRef = useRef<string | null>(activeId)
@@ -231,13 +234,16 @@ export function ChatArea({ theme }: Props) {
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${theme === 'dark' ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
+      {/* Header */}
+      <ChatHeader theme={theme} />
+
       {/* Messages */}
       <div ref={scrollContainerRef} className="chat-scroll relative flex-1 overflow-y-auto px-4 py-8">
         {showEmpty ? (
           <div className={`flex h-full flex-col items-center justify-center text-center ${theme === 'dark' ? 'text-zinc-500' : 'text-zinc-500'}`}>
             <MessageSquare size={48} className="mb-4 opacity-30" />
-            <p className="text-base">Start a conversation</p>
-            <p className="mt-1 text-sm opacity-60">Select a model and type a message below</p>
+            <p className="text-base">{t('chat.startConversation')}</p>
+            <p className="mt-1 text-sm opacity-60">{t('chat.selectModelHint')}</p>
           </div>
         ) : (
           <ChatMessageList
@@ -255,11 +261,11 @@ export function ChatArea({ theme }: Props) {
           className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
           style={{ bottom: composerHeight + 12 }}
         >
-          <IconTooltip label="Scroll to bottom">
+          <IconTooltip label={t('chat.scrollToBottom')}>
             <button
               type="button"
               onClick={() => scrollToBottom()}
-              aria-label="Scroll to bottom"
+              aria-label={t('chat.scrollToBottom')}
               className={`pointer-events-auto rounded-full border p-3 shadow-lg backdrop-blur transition ${isDark ? 'border-zinc-700 bg-zinc-800/90 text-zinc-200 hover:bg-zinc-700' : 'border-zinc-300 bg-white/95 text-zinc-700 hover:bg-zinc-100'}`}
             >
               <ArrowDown className="h-5 w-5" />
