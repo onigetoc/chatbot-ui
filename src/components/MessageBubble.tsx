@@ -2,7 +2,7 @@ import { memo, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Check, Copy, Pencil, Send } from 'lucide-react'
+import { Check, Copy, Pencil, Send, ChevronDown, ChevronUp } from 'lucide-react'
 import { CodeBlock } from './CodeBlock'
 import { IconTooltip } from './IconTooltip'
 import type { ThemeMode } from '../store/chatStore'
@@ -42,6 +42,52 @@ function CopyButton({ text, isDark }: { text: string; isDark: boolean }) {
         {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
       </button>
     </IconTooltip>
+  )
+}
+
+/** Max lines to show before collapsing user messages */
+const USER_MSG_COLLAPSED_LINES = 4
+
+function UserMessageContent({ message, isDark, t }: { message: Message; isDark: boolean; t: (key: string) => string }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [isClamped, setIsClamped] = useState(false)
+
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    // Check if content overflows the clamped height
+    setIsClamped(el.scrollHeight > el.clientHeight)
+  }, [message.content])
+
+  return (
+    <div className={`max-w-[82%] rounded-2xl rounded-tr-sm px-5 py-3 text-[0.98rem] leading-7 ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 ring-1 ring-zinc-300 shadow-sm'}`}>
+      <div
+        ref={contentRef}
+        className={`whitespace-pre-wrap overflow-hidden ${!isExpanded ? 'line-clamp-[4]' : ''}`}
+      >
+        {message.content}
+      </div>
+      {(isClamped || isExpanded) && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={`mt-1.5 flex items-center gap-1 text-xs font-medium transition-colors ${
+            isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-700'
+          }`}
+        >
+          {isExpanded ? (
+            <>
+              {t('chat.showLess')} <ChevronUp size={14} />
+            </>
+          ) : (
+            <>
+              {t('chat.showMore')} <ChevronDown size={14} />
+            </>
+          )}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -131,9 +177,7 @@ export function MessageBubble({ message, theme, onEditMessage }: Props) {
           </div>
         ) : (
           <>
-            <div className={`max-w-[82%] rounded-2xl rounded-tr-sm px-5 py-3 text-[0.98rem] leading-7 whitespace-pre-wrap ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 ring-1 ring-zinc-300 shadow-sm'}`}>
-              {message.content}
-            </div>
+            <UserMessageContent message={message} isDark={isDark} t={t} />
             {/* Action buttons */}
             <div className="mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <CopyButton text={message.content} isDark={isDark} />

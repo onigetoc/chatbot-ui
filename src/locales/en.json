@@ -21,7 +21,9 @@
     "copyMessage": "Copy",
     "editMessage": "Edit & resend",
     "cancel": "Cancel",
-    "resend": "Resend"
+    "resend": "Resend",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "composer": {
     "placeholder": "Type a message...",
