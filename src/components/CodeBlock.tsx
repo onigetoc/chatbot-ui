@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -8,7 +8,7 @@ interface Props {
   children: string
 }
 
-export function CodeBlock({ language = 'text', children }: Props) {
+export const CodeBlock = memo(function CodeBlock({ language = 'text', children }: Props) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -40,4 +40,4 @@ export function CodeBlock({ language = 'text', children }: Props) {
       </SyntaxHighlighter>
     </div>
   )
-}
+})

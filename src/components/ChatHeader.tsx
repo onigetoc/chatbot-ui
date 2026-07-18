@@ -99,25 +99,27 @@ export function ChatHeader({ theme }: Props) {
             >
               {title}
             </h1>
-            <button
-              type="button"
-              onClick={startEditing}
-              aria-label={t('chat.editConversationName')}
-              className={`rounded p-1 transition-colors ${
-                isDark
-                  ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-                  : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700'
-              }`}
-            >
-              <Pencil size={14} />
-            </button>
+            <IconTooltip label={t('chat.editConversationName')}>
+              <button
+                type="button"
+                onClick={startEditing}
+                aria-label={t('chat.editConversationName')}
+                className={`rounded p-1 transition-colors ${
+                  isDark
+                    ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                    : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700'
+                }`}
+              >
+                <Pencil size={14} />
+              </button>
+            </IconTooltip>
           </>
         )}
       </div>
 
       {/* Right: copy conversation */}
       {messages.length > 0 && (
-        <IconTooltip label={t('chat.copyConversation')}>
+        <IconTooltip label={t('chat.copyConversation')} side="bottom">
           <button
             type="button"
             onClick={copyConversation}

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState, useCallback, memo, useImperativeHandle, forwardRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { KeyboardEvent, DragEvent } from 'react'
 import { Send, Square, Paperclip, Image as ImageIcon, X } from 'lucide-react'
@@ -13,10 +13,14 @@ export interface FileAttachment {
   url: string // data URL (base64)
 }
 
+/** Imperative handle so parent can inject text (e.g. edit-message flow) */
+export interface ComposerBarHandle {
+  setInput: (text: string) => void
+  submit: () => void
+}
+
 interface Props {
-  input: string
-  setInput: (v: string) => void
-  onSubmit: (attachments?: FileAttachment[]) => void
+  onSubmit: (text: string, attachments?: FileAttachment[]) => void
   isLoading: boolean
   onStop: () => void
   theme: ThemeMode
@@ -42,15 +46,30 @@ async function fileToDataURL(file: File): Promise<string> {
   })
 }
 
-export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, theme }: Props) {
+export const ComposerBar = memo(forwardRef<ComposerBarHandle, Props>(function ComposerBar({ onSubmit, isLoading, onStop, theme }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const { models } = useModels()
-  const { selectedModel, setSelectedModel } = useChatStore()
+  const selectedModel = useChatStore((s) => s.selectedModel)
+  const setSelectedModel = useChatStore((s) => s.setSelectedModel)
   const { t } = useTranslation()
+
+  // *** Input state is now LOCAL — no parent re-render on keystroke ***
+  const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
   const [isDragging, setIsDragging] = useState(false)
+
+  // Expose imperative methods to parent (for edit-message flow)
+  useImperativeHandle(ref, () => ({
+    setInput: (text: string) => {
+      setInput(text)
+    },
+    submit: () => {
+      // Will be called after setInput in a setTimeout from parent
+      handleSendRef.current()
+    },
+  }), [])
 
   useRefocusOnLoad(textareaRef, isLoading)
 
@@ -80,17 +99,22 @@ export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, them
     setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function handleSend() {
+    if (!input.trim() && attachments.length === 0) return
+    onSubmit(input, attachments.length > 0 ? attachments : undefined)
+    setInput('')
+    setAttachments([])
+  }
+
+  // Keep a ref to handleSend so the imperative handle always calls the latest version
+  const handleSendRef = useRef(handleSend)
+  handleSendRef.current = handleSend
+
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (!isLoading && (input.trim() || attachments.length > 0)) handleSend()
     }
-  }
-
-  function handleSend() {
-    if (!input.trim() && attachments.length === 0) return
-    onSubmit(attachments.length > 0 ? attachments : undefined)
-    setAttachments([])
   }
 
   // Drag and drop handlers
@@ -269,4 +293,4 @@ export function ComposerBar({ input, setInput, onSubmit, isLoading, onStop, them
       </div>
     </div>
   )
-}
+}))

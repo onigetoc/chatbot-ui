@@ -1,13 +1,14 @@
-import { memo, useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, MessageSquare } from 'lucide-react'
 import { useChat } from 'ai/react'
 import { MemoizedMessageBubble, MemoizedTypingIndicator } from './MessageBubble'
-import { ComposerBar, type FileAttachment } from './ComposerBar'
+import { ComposerBar, type FileAttachment, type ComposerBarHandle } from './ComposerBar'
 import { Toast } from './Toast'
 import { IconTooltip } from './IconTooltip'
 import { useChatStore, type ThemeMode } from '../store/chatStore'
 import { ChatHeader } from './ChatHeader'
+import { ChatTOC } from './ChatTOC'
 import { getStoredApiKey } from '../providers/frontend/ApiKeysSection'
 import { getProviderBaseURL } from '../providers/frontend/models-cache'
 import type { Message } from '../types'
@@ -52,10 +53,16 @@ function toStoreMessages(msgs: { id: string; role: string; content: string }[]):
 }
 
 export function ChatArea({ theme }: Props) {
-  const { activeId, conversations, selectedModel, createConversation, updateMessages, setActiveId } = useChatStore()
+  const activeId = useChatStore((s) => s.activeId)
+  const conversations = useChatStore((s) => s.conversations)
+  const selectedModel = useChatStore((s) => s.selectedModel)
+  const createConversation = useChatStore((s) => s.createConversation)
+  const updateMessages = useChatStore((s) => s.updateMessages)
+  const setActiveId = useChatStore((s) => s.setActiveId)
   const { t } = useTranslation()
   const scrollRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<ComposerBarHandle>(null)
   const activeIdRef = useRef<string | null>(activeId)
   const latestStoreMessagesRef = useRef<Message[]>([])
   const composerContainerRef = useRef<HTMLDivElement>(null)
@@ -88,18 +95,18 @@ export function ChatArea({ theme }: Props) {
     }
   }, [activeId, conversations, setActiveId])
 
-  // Resolve API key and base URL dynamically
-  const getApiKeyForModel = (modelId: string): string => {
+  // Resolve API key and base URL dynamically (pure functions, no deps on component state)
+  const getApiKeyForModel = useCallback((modelId: string): string => {
     const slashIdx = modelId.indexOf('/')
     const providerId = slashIdx !== -1 ? modelId.substring(0, slashIdx) : 'opencode'
     return getStoredApiKey(providerId) || ''
-  }
+  }, [])
 
-  const getBaseURLForModel = (modelId: string): string => {
+  const getBaseURLForModel = useCallback((modelId: string): string => {
     const slashIdx = modelId.indexOf('/')
     const providerId = slashIdx !== -1 ? modelId.substring(0, slashIdx) : 'opencode'
     return getProviderBaseURL(providerId) || ''
-  }
+  }, [])
 
   // Stable initial messages — only recompute when activeId actually changes
   const initialMessagesRef = useRef<{ id: string; role: 'user' | 'assistant' | 'system'; content: string }[]>([])
@@ -115,7 +122,7 @@ export function ChatArea({ theme }: Props) {
     })) ?? []
   }
 
-  const { messages, input, setInput, setMessages, handleSubmit: rawHandleSubmit, isLoading, stop } = useChat({
+  const { messages, setMessages, append, isLoading, stop } = useChat({
     id: activeId || 'new',
     api: '/api/chat',
     initialMessages: initialMessagesRef.current,
@@ -131,8 +138,8 @@ export function ChatArea({ theme }: Props) {
     },
   })
 
-  // Wrap handleSubmit to always send fresh body with current model + key + baseURL
-  const handleSubmit = (e: FormEvent, attachments?: FileAttachment[]) => {
+  // Submit a message using append — no dependency on useChat's input state
+  const submitMessage = useCallback((text: string, attachments?: FileAttachment[]) => {
     setChatError(null)
     const options: Record<string, unknown> = {
       body: {
@@ -148,8 +155,8 @@ export function ChatArea({ theme }: Props) {
         url: a.url,
       }))
     }
-    rawHandleSubmit(e, options)
-  }
+    append({ role: 'user', content: text }, options)
+  }, [selectedModel, getApiKeyForModel, getBaseURLForModel, append])
 
   const displayMessages = useMemo(
     () => messages
@@ -208,10 +215,12 @@ export function ChatArea({ theme }: Props) {
   }, [])
 
   const [pendingSubmit, setPendingSubmit] = useState(false)
+  const pendingText = useRef<string>('')
   const pendingAttachments = useRef<FileAttachment[] | undefined>(undefined)
 
-  function handleSend(attachments?: FileAttachment[]) {
-    if (!input.trim() && (!attachments || attachments.length === 0)) return
+  const handleSend = useCallback((text: string, attachments?: FileAttachment[]) => {
+    if (!text.trim() && (!attachments || attachments.length === 0)) return
+    pendingText.current = text
     pendingAttachments.current = attachments
     // Create conversation on first message
     if (!activeId) {
@@ -219,23 +228,25 @@ export function ChatArea({ theme }: Props) {
       setPendingSubmit(true)
       return
     }
-    handleSubmit(new Event('submit') as unknown as FormEvent, attachments)
+    submitMessage(text, attachments)
+    pendingText.current = ''
     pendingAttachments.current = undefined
-  }
+  }, [activeId, createConversation, submitMessage])
 
   // Submit after conversation is created
   useEffect(() => {
     if (pendingSubmit && activeId) {
       setPendingSubmit(false)
-      handleSubmit(new Event('submit') as unknown as FormEvent, pendingAttachments.current)
+      submitMessage(pendingText.current, pendingAttachments.current)
+      pendingText.current = ''
       pendingAttachments.current = undefined
     }
-  }, [pendingSubmit, activeId, handleSubmit])
+  }, [pendingSubmit, activeId, submitMessage])
 
   const showEmpty = messages.length === 0 && !isLoading
 
   // Edit + resend: truncate conversation at the edited message and resend
-  function handleEditMessage(messageId: string, newContent: string) {
+  const handleEditMessage = useCallback((messageId: string, newContent: string) => {
     const msgIndex = messages.findIndex((m) => m.id === messageId)
     if (msgIndex === -1) return
 
@@ -243,17 +254,25 @@ export function ChatArea({ theme }: Props) {
     const truncated = messages.slice(0, msgIndex)
     setMessages(truncated)
 
-    // Set the new content as input and trigger a submit
-    setInput(newContent)
+    // Submit the edited content directly
     setTimeout(() => {
-      handleSubmit(new Event('submit') as unknown as FormEvent)
+      submitMessage(newContent)
     }, 0)
-  }
+  }, [messages, setMessages, submitMessage])
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${theme === 'dark' ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
       {/* Header */}
       <ChatHeader theme={theme} />
+
+      {/* TOC minimap - fixed right side */}
+      {!showEmpty && displayMessages.length >= 2 && (
+        <ChatTOC
+          messages={displayMessages}
+          theme={theme}
+          scrollContainerRef={scrollContainerRef}
+        />
+      )}
 
       {/* Messages */}
       <div ref={scrollContainerRef} className="chat-scroll relative flex-1 overflow-y-auto px-4 py-8">
@@ -296,8 +315,7 @@ export function ChatArea({ theme }: Props) {
       {/* Composer */}
       <div ref={composerContainerRef}>
         <ComposerBar
-          input={input}
-          setInput={setInput}
+          ref={composerRef}
           onSubmit={handleSend}
           isLoading={isLoading}
           onStop={stop}

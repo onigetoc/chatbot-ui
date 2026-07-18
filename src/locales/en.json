@@ -17,7 +17,7 @@
     "scrollToBottom": "Scroll to bottom",
     "editConversationName": "Edit conversation name",
     "renameConversation": "Rename conversation",
-    "copyConversation": "Copy conversation",
+    "copyConversation": "Copy all (markdown)",
     "copyMessage": "Copy",
     "editMessage": "Edit & resend",
     "cancel": "Cancel",
