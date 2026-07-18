@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pencil } from 'lucide-react'
+import { Check, Copy, Pencil } from 'lucide-react'
 import { useChatStore, type ThemeMode } from '../store/chatStore'
+import { IconTooltip } from './IconTooltip'
 
 interface Props {
   theme: ThemeMode
@@ -12,10 +13,12 @@ export function ChatHeader({ theme }: Props) {
   const { t } = useTranslation()
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const [copied, setCopied] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const activeConversation = conversations.find((c) => c.id === activeId)
   const title = activeConversation?.title || t('chat.newChat')
+  const messages = activeConversation?.messages || []
 
   const isDark = theme === 'dark'
 
@@ -41,6 +44,21 @@ export function ChatHeader({ theme }: Props) {
     }
   }
 
+  async function copyConversation() {
+    if (messages.length === 0) return
+
+    const markdown = messages
+      .map((m) => {
+        const role = m.role === 'user' ? '**User**' : '**Assistant**'
+        return `${role}:\n\n${m.content}`
+      })
+      .join('\n\n---\n\n')
+
+    await navigator.clipboard.writeText(markdown)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   useEffect(() => {
     if (isEditing) {
       inputRef.current?.focus()
@@ -50,10 +68,11 @@ export function ChatHeader({ theme }: Props) {
 
   return (
     <div
-      className={`flex h-12 shrink-0 items-center border-b px-4 ${
+      className={`flex h-12 shrink-0 items-center justify-between border-b px-4 ${
         isDark ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-200 bg-zinc-100'
       }`}
     >
+      {/* Left: title + edit */}
       <div className="flex items-center gap-2">
         {isEditing ? (
           <input
@@ -95,6 +114,24 @@ export function ChatHeader({ theme }: Props) {
           </>
         )}
       </div>
+
+      {/* Right: copy conversation */}
+      {messages.length > 0 && (
+        <IconTooltip label={t('chat.copyConversation')}>
+          <button
+            type="button"
+            onClick={copyConversation}
+            aria-label={t('chat.copyConversation')}
+            className={`rounded p-1.5 transition-colors ${
+              isDark
+                ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700'
+            }`}
+          >
+            {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
+          </button>
+        </IconTooltip>
+      )}
     </div>
   )
 }

@@ -43,6 +43,22 @@ No test framework or test files exist in this repository.
 
 Chat uses `useChat` from `ai/react` hitting `POST /api/chat`. The server uses `streamText` from Vercel AI SDK v4. All providers use `@ai-sdk/openai-compatible` — the server constructs provider instances with `createOpenAICompatible(...)` and a base URL map in `server/routes/chat.ts:11-27`.
 
+## Internationalization (i18n)
+
+- Uses `i18next` + `react-i18next` + `i18next-browser-languagedetector`.
+- Initialized in `src/i18n.ts` — imported in `src/main.tsx` before the app renders.
+- Language detected from localStorage first (`chatbot-ui-language`), then navigator.
+- Translations stored in `src/locales/` as JSON (`en.json`, `fr.json`). Add new locale files and register them in `src/i18n.ts`.
+- Language selector in Settings > General.
+- `erasableSyntaxOnly` note: i18n does not use enums/namespaces, compatible.
+
+## Components
+
+- **`ChatHeader`** (`src/components/ChatHeader.tsx`) — top bar in ChatArea showing active conversation title with inline rename (click pencil icon, Enter to save, Escape to cancel, blur to save).
+- **`GeneralSettings`** (`src/components/GeneralSettings.tsx`) — Settings tab for language selection. Rendered in `SettingsPanel.tsx` as the first tab.
+- **`ConversationContextMenu`** (inline in `Sidebar.tsx`) — per-conversation menu with rename and delete actions, triggered by `MoreHorizontal` button on hover.
+- **`renameConversation`** action added to `chatStore.ts` — updates title and `updatedAt` on matching conversation.
+
 ## Karpathy Guidelines
 
 Behavioral guidelines to reduce common LLM coding mistakes, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.

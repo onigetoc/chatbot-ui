@@ -16,7 +16,12 @@
     "selectModelHint": "Select a model and type a message below",
     "scrollToBottom": "Scroll to bottom",
     "editConversationName": "Edit conversation name",
-    "renameConversation": "Rename conversation"
+    "renameConversation": "Rename conversation",
+    "copyConversation": "Copy conversation",
+    "copyMessage": "Copy",
+    "editMessage": "Edit & resend",
+    "cancel": "Cancel",
+    "resend": "Resend"
   },
   "composer": {
     "placeholder": "Type a message...",

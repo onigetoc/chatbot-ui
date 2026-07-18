@@ -21,9 +21,10 @@ interface ChatMessageListProps {
   theme: ThemeMode
   isLoading: boolean
   scrollRef: RefObject<HTMLDivElement | null>
+  onEditMessage?: (messageId: string, newContent: string) => void
 }
 
-const ChatMessageList = memo(function ChatMessageList({ messages, theme, isLoading, scrollRef }: ChatMessageListProps) {
+const ChatMessageList = memo(function ChatMessageList({ messages, theme, isLoading, scrollRef, onEditMessage }: ChatMessageListProps) {
   return (
     <div className="mx-auto max-w-4xl">
       {messages.map((message) => (
@@ -31,6 +32,7 @@ const ChatMessageList = memo(function ChatMessageList({ messages, theme, isLoadi
           key={message.id}
           message={message}
           theme={theme}
+          onEditMessage={onEditMessage}
         />
       ))}
       {isLoading && <MemoizedTypingIndicator />}
@@ -113,7 +115,7 @@ export function ChatArea({ theme }: Props) {
     })) ?? []
   }
 
-  const { messages, input, setInput, handleSubmit: rawHandleSubmit, isLoading, stop } = useChat({
+  const { messages, input, setInput, setMessages, handleSubmit: rawHandleSubmit, isLoading, stop } = useChat({
     id: activeId || 'new',
     api: '/api/chat',
     initialMessages: initialMessagesRef.current,
@@ -232,6 +234,22 @@ export function ChatArea({ theme }: Props) {
 
   const showEmpty = messages.length === 0 && !isLoading
 
+  // Edit + resend: truncate conversation at the edited message and resend
+  function handleEditMessage(messageId: string, newContent: string) {
+    const msgIndex = messages.findIndex((m) => m.id === messageId)
+    if (msgIndex === -1) return
+
+    // Keep messages up to (but not including) the edited message
+    const truncated = messages.slice(0, msgIndex)
+    setMessages(truncated)
+
+    // Set the new content as input and trigger a submit
+    setInput(newContent)
+    setTimeout(() => {
+      handleSubmit(new Event('submit') as unknown as FormEvent)
+    }, 0)
+  }
+
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${theme === 'dark' ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
       {/* Header */}
@@ -251,6 +269,7 @@ export function ChatArea({ theme }: Props) {
             theme={theme}
             isLoading={isLoading}
             scrollRef={scrollRef}
+            onEditMessage={handleEditMessage}
           />
         )}
 

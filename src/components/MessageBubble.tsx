@@ -1,31 +1,164 @@
-import { memo } from 'react'
+import { memo, useRef, useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Check, Copy, Pencil, Send } from 'lucide-react'
 import { CodeBlock } from './CodeBlock'
+import { IconTooltip } from './IconTooltip'
 import type { ThemeMode } from '../store/chatStore'
 import type { Message } from '../types'
 
 interface Props {
   message: Message
   theme: ThemeMode
+  onEditMessage?: (messageId: string, newContent: string) => void
 }
 
-export function MessageBubble({ message, theme }: Props) {
+function CopyButton({ text, isDark }: { text: string; isDark: boolean }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <IconTooltip label={t('chat.copyMessage')}>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={t('chat.copyMessage')}
+        className={`rounded p-1 transition-colors ${
+          isDark
+            ? 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+            : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600'
+        }`}
+      >
+        {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+      </button>
+    </IconTooltip>
+  )
+}
+
+export function MessageBubble({ message, theme, onEditMessage }: Props) {
+  const { t } = useTranslation()
   const isUser = message.role === 'user'
   const isDark = theme === 'dark'
+  const [isEditing, setIsEditing] = useState(false)
+  const [editDraft, setEditDraft] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus()
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
+    }
+  }, [isEditing])
+
+  function startEditing() {
+    setEditDraft(message.content)
+    setIsEditing(true)
+  }
+
+  function cancelEdit() {
+    setIsEditing(false)
+  }
+
+  function submitEdit() {
+    const trimmed = editDraft.trim()
+    if (trimmed && trimmed !== message.content && onEditMessage) {
+      onEditMessage(message.id, trimmed)
+    }
+    setIsEditing(false)
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submitEdit()
+    } else if (e.key === 'Escape') {
+      cancelEdit()
+    }
+  }
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-4">
-        <div className={`max-w-[82%] rounded-2xl rounded-tr-sm px-5 py-3 text-[0.98rem] leading-7 whitespace-pre-wrap ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 ring-1 ring-zinc-300 shadow-sm'}`}>
-          {message.content}
-        </div>
+      <div className="group flex flex-col items-end mb-4">
+        {isEditing ? (
+          <div className={`w-full max-w-[82%] rounded-2xl px-4 py-3 ${isDark ? 'bg-zinc-800' : 'bg-white ring-1 ring-zinc-300 shadow-sm'}`}>
+            <textarea
+              ref={textareaRef}
+              value={editDraft}
+              onChange={(e) => {
+                setEditDraft(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = e.target.scrollHeight + 'px'
+              }}
+              onKeyDown={handleEditKeyDown}
+              className={`w-full resize-none bg-transparent text-[0.98rem] leading-7 outline-none ${isDark ? 'text-white' : 'text-zinc-900'}`}
+              rows={1}
+            />
+            <div className="mt-2 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
+                  isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                {t('chat.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={submitEdit}
+                disabled={!editDraft.trim() || editDraft.trim() === message.content}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium transition ${
+                  !editDraft.trim() || editDraft.trim() === message.content
+                    ? 'cursor-not-allowed opacity-40'
+                    : ''
+                } ${isDark ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-zinc-900 text-white hover:bg-zinc-700'}`}
+              >
+                <Send size={12} />
+                {t('chat.resend')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className={`max-w-[82%] rounded-2xl rounded-tr-sm px-5 py-3 text-[0.98rem] leading-7 whitespace-pre-wrap ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 ring-1 ring-zinc-300 shadow-sm'}`}>
+              {message.content}
+            </div>
+            {/* Action buttons */}
+            <div className="mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <CopyButton text={message.content} isDark={isDark} />
+              {onEditMessage && (
+                <IconTooltip label={t('chat.editMessage')}>
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    aria-label={t('chat.editMessage')}
+                    className={`rounded p-1 transition-colors ${
+                      isDark
+                        ? 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+                        : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600'
+                    }`}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </IconTooltip>
+              )}
+            </div>
+          </>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="flex justify-start mb-4">
+    <div className="group flex flex-col items-start mb-4">
       <div className={`max-w-[88%] text-[0.98rem] leading-7 ${isDark ? 'text-zinc-100' : 'text-zinc-800'}`}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -90,6 +223,10 @@ export function MessageBubble({ message, theme }: Props) {
           {message.content}
         </ReactMarkdown>
       </div>
+      {/* Action buttons */}
+      <div className="mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <CopyButton text={message.content} isDark={isDark} />
+      </div>
     </div>
   )
 }
@@ -100,6 +237,7 @@ function areMessageBubblePropsEqual(prev: Props, next: Props) {
     && prev.message.id === next.message.id
     && prev.message.role === next.message.role
     && prev.message.content === next.message.content
+    && prev.onEditMessage === next.onEditMessage
   )
 }
 
