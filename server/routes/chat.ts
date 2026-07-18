@@ -51,10 +51,34 @@ app.post('/', async (c) => {
         console.log('[chat] finished:', { model: modelId, finishReason, usage })
       },
     })
-    return result.toDataStreamResponse()
+
+    // Consume the stream to detect errors before returning
+    // Use getErrorMessage to forward real API errors to client
+    return result.toDataStreamResponse({
+      getErrorMessage: (error: unknown) => {
+        if (error instanceof Error) {
+          console.error('[chat] stream error:', error.message)
+          // Try to extract the actual API error
+          if ('responseBody' in error) {
+            const respBody = (error as any).responseBody
+            console.error('[chat] response body:', respBody)
+            return String(respBody || error.message)
+          }
+          if ('cause' in error && error.cause) {
+            console.error('[chat] cause:', error.cause)
+          }
+          return error.message
+        }
+        console.error('[chat] stream error (unknown):', error)
+        return String(error)
+      },
+    })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('[chat] error:', message)
+    if (err instanceof Error && 'cause' in err) {
+      console.error('[chat] cause:', err.cause)
+    }
     return c.json({ error: message }, 500)
   }
 })
