@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import chatRoute from './routes/chat'
 import modelsRoute from './routes/models'
+import keysRoute from './routes/keys'
 
 const app = new Hono()
 
@@ -10,6 +11,7 @@ app.use('*', cors({ origin }))
 
 app.route('/api/chat', chatRoute)
 app.route('/api/models', modelsRoute)
+app.route('/api/keys', keysRoute)
 
 app.get('/health', (c) => c.json({ ok: true }))
 

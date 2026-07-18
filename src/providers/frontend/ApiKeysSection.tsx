@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Plus,
   Search,
+  ScanSearch,
   Trash2,
   X,
 } from 'lucide-react'
@@ -74,6 +75,13 @@ interface ProviderOption {
   isPopular: boolean
 }
 
+interface ScannedKey {
+  envVar: string
+  provider: string
+  label: string
+  masked: string
+}
+
 interface ApiKeysSectionProps {
   isDark: boolean
 }
@@ -89,6 +97,11 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
   const [search, setSearch] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Scan state
+  const [scannedKeys, setScannedKeys] = useState<ScannedKey[] | null>(null)
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
 
   // Load providers from models.dev
   useEffect(() => {
@@ -157,6 +170,20 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
     }
   }, [dropdownOpen])
 
+  // Pre-fill masked key when selecting a configured provider
+  useEffect(() => {
+    if (selectedProvider && storedKeys[selectedProvider.id]) {
+      const key = storedKeys[selectedProvider.id]
+      const masked = key.length <= 10
+        ? '••••••••'
+        : `${key.substring(0, 4)}${'•'.repeat(20)}${key.slice(-4)}`
+      setKeyInput(masked)
+      setShowKey(false)
+    } else {
+      setKeyInput('')
+    }
+  }, [selectedProvider])
+
   const configuredProviders = providers.filter((p) => !!storedKeys[p.id])
 
   const filteredProviders = providers.filter(p =>
@@ -174,8 +201,15 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
     setSearch('')
   }
 
+  const isMaskedValue = (value: string) => value.includes('••••')
+
   const handleSave = () => {
     if (!selectedProvider || !keyInput.trim()) return
+    // Don't save if it's the masked placeholder
+    if (isMaskedValue(keyInput)) {
+      setFeedback({ type: 'error', msg: 'Enter a new key to update, or leave as-is.' })
+      return
+    }
 
     const next = { ...storedKeys, [selectedProvider.id]: keyInput.trim() }
     saveStoredKeys(next)
@@ -195,6 +229,50 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
     const label = providers.find((p) => p.id === providerId)?.name || providerId
     setFeedback({ type: 'success', msg: `${label} key removed` })
+
+    // Clear input if we're removing the currently selected provider
+    if (selectedProvider?.id === providerId) {
+      setSelectedProvider(null)
+      setKeyInput('')
+    }
+  }
+
+  // ─── Scan env keys ─────────────────────────────────────────────────
+  const handleScan = async () => {
+    setScanning(true)
+    setScanError(null)
+    try {
+      const res = await fetch('/api/keys/scan')
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
+      const data = await res.json()
+      setScannedKeys(data.keys || [])
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Failed to scan')
+      setScannedKeys(null)
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const handleAddScannedKey = async (envVar: string) => {
+    try {
+      const res = await fetch('/api/keys/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ envVar }),
+      })
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
+      const data = await res.json()
+
+      if (data.success && data.key) {
+        const next = { ...storedKeys, [data.provider]: data.key }
+        saveStoredKeys(next)
+        setStoredKeys(next)
+        setFeedback({ type: 'success', msg: `${data.label} key added from ${envVar}` })
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to add key' })
+    }
   }
 
   return (
@@ -340,6 +418,12 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
                   type={showKey ? 'text' : 'password'}
                   value={keyInput}
                   onChange={(e) => setKeyInput(e.target.value)}
+                  onFocus={() => {
+                    // Clear the masked placeholder when user focuses to type a new key
+                    if (isMaskedValue(keyInput)) {
+                      setKeyInput('')
+                    }
+                  }}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
                   placeholder={selectedProvider ? 'Paste your API key...' : 'Select a provider first'}
                   disabled={!selectedProvider}
@@ -358,9 +442,9 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
               )}
             </div>
 
-            <button type="button" onClick={handleSave} disabled={!selectedProvider || !keyInput.trim()}
+            <button type="button" onClick={handleSave} disabled={!selectedProvider || !keyInput.trim() || isMaskedValue(keyInput)}
               className={`rounded-lg px-4 py-2.5 text-sm font-medium transition shrink-0 ${
-                !selectedProvider || !keyInput.trim()
+                !selectedProvider || !keyInput.trim() || isMaskedValue(keyInput)
                   ? 'cursor-not-allowed ' + (isDark ? 'bg-zinc-800 text-zinc-600' : 'bg-zinc-100 text-zinc-400')
                   : isDark ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-emerald-600 text-white hover:bg-emerald-500'
               }`}>
@@ -373,7 +457,7 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
 
       {/* Configured providers */}
       {configuredProviders.length > 0 && (
-        <div className={`rounded-xl border ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
+        <div className={`rounded-xl border mb-6 ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
           <h3 className={`px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
             Configured Providers ({configuredProviders.length})
           </h3>
@@ -398,11 +482,90 @@ export default function ApiKeysSection({ isDark }: ApiKeysSectionProps) {
       )}
 
       {configuredProviders.length === 0 && (
-        <div className={`rounded-xl border p-6 text-center ${isDark ? 'border-zinc-800 text-zinc-500' : 'border-zinc-300 text-zinc-400'}`}>
+        <div className={`rounded-xl border p-6 text-center mb-6 ${isDark ? 'border-zinc-800 text-zinc-500' : 'border-zinc-300 text-zinc-400'}`}>
           <p className="text-sm">No API keys configured yet.</p>
           <p className="text-xs mt-1">Add a provider key above to start chatting.</p>
         </div>
       )}
+
+      {/* Scan System Environment Variables */}
+      <div className={`rounded-xl border p-4 ${isDark ? 'border-zinc-800 bg-zinc-800/60' : 'border-zinc-300 bg-zinc-200'}`}>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className={`text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>Detect System API Keys</h3>
+          <button
+            type="button"
+            onClick={handleScan}
+            disabled={scanning}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              isDark
+                ? 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'
+                : 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'
+            }`}
+          >
+            <ScanSearch className={`h-4 w-4 ${scanning ? 'animate-spin' : ''}`} />
+            Scan API Keys
+          </button>
+        </div>
+        <p className={`text-xs mb-3 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+          Scan the host machine's environment variables for known LLM provider API keys.
+        </p>
+
+        {/* Scan error */}
+        {scanError && (
+          <div className={`rounded-lg border px-4 py-3 text-sm ${isDark ? 'border-rose-900 bg-rose-950/50 text-rose-300' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+            {scanError}
+          </div>
+        )}
+
+        {/* Scan results */}
+        {scannedKeys !== null && (
+          <div className={`rounded-lg border ${isDark ? 'border-zinc-700' : 'border-zinc-300'}`}>
+            {scannedKeys.length === 0 ? (
+              <p className={`px-4 py-4 text-center text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                No API keys found in system environment variables.
+              </p>
+            ) : (
+              scannedKeys.map((key, idx) => {
+                const alreadyConfigured = !!storedKeys[key.provider]
+                return (
+                  <div
+                    key={key.envVar}
+                    className={`flex items-center justify-between px-4 py-3 ${
+                      idx !== scannedKeys.length - 1 ? (isDark ? 'border-b border-zinc-700' : 'border-b border-zinc-300') : ''
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                          {key.label}
+                        </span>
+                        {alreadyConfigured && (
+                          <span className={`rounded px-1.5 py-0.5 text-xs ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                            configured
+                          </span>
+                        )}
+                      </div>
+                      <span className={`text-xs font-mono ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        {key.envVar} = {key.masked}
+                      </span>
+                    </div>
+                    {!alreadyConfigured && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddScannedKey(key.envVar)}
+                        className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-500"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add to ChatBot
+                      </button>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
