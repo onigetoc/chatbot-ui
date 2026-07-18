@@ -1,0 +1,9 @@
+[
+  { "id": "gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI", "providerId": "openai" },
+  { "id": "gpt-4o", "name": "GPT-4o", "provider": "OpenAI", "providerId": "openai" },
+  { "id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku", "provider": "Anthropic", "providerId": "anthropic" },
+  { "id": "claude-3-7-sonnet-20250219", "name": "Claude 3.7 Sonnet", "provider": "Anthropic", "providerId": "anthropic" },
+  { "id": "meta-llama/llama-3.3-70b-instruct", "name": "Llama 3.3 70B Instruct", "provider": "Meta (via OpenRouter)", "providerId": "openrouter" },
+  { "id": "mistralai/mistral-nemo", "name": "Mistral Nemo", "provider": "Mistral (via OpenRouter)", "providerId": "openrouter" },
+  { "id": "deepseek/deepseek-r1", "name": "DeepSeek R1", "provider": "DeepSeek (via OpenRouter)", "providerId": "openrouter" }
+]
