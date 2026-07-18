@@ -2,11 +2,12 @@ import { memo, useEffect, useMemo, useRef, useState, type FormEvent, type RefObj
 import { ArrowDown, MessageSquare } from 'lucide-react'
 import { useChat } from 'ai/react'
 import { MemoizedMessageBubble, MemoizedTypingIndicator } from './MessageBubble'
-import { ComposerBar } from './ComposerBar'
+import { ComposerBar, type FileAttachment } from './ComposerBar'
 import { Toast } from './Toast'
 import { IconTooltip } from './IconTooltip'
 import { useChatStore, type ThemeMode } from '../store/chatStore'
 import { getStoredApiKey } from '../providers/frontend/ApiKeysSection'
+import { getProviderBaseURL } from '../providers/frontend/models-cache'
 import type { Message } from '../types'
 
 interface Props {
@@ -84,11 +85,17 @@ export function ChatArea({ theme }: Props) {
     }
   }, [activeId, conversations, setActiveId])
 
-  // Resolve API key dynamically on each render
+  // Resolve API key and base URL dynamically
   const getApiKeyForModel = (modelId: string): string => {
     const slashIdx = modelId.indexOf('/')
     const providerId = slashIdx !== -1 ? modelId.substring(0, slashIdx) : 'opencode'
     return getStoredApiKey(providerId) || ''
+  }
+
+  const getBaseURLForModel = (modelId: string): string => {
+    const slashIdx = modelId.indexOf('/')
+    const providerId = slashIdx !== -1 ? modelId.substring(0, slashIdx) : 'opencode'
+    return getProviderBaseURL(providerId) || ''
   }
 
   const { messages, input, setInput, handleSubmit: rawHandleSubmit, isLoading, stop, setMessages } = useChat({
@@ -96,6 +103,7 @@ export function ChatArea({ theme }: Props) {
     body: {
       model: selectedModel,
       apiKey: getApiKeyForModel(selectedModel),
+      baseURL: getBaseURLForModel(selectedModel),
     },
     initialMessages: activeConv?.messages.map((m) => ({
       id: m.id,
@@ -114,14 +122,23 @@ export function ChatArea({ theme }: Props) {
     },
   })
 
-  // Wrap handleSubmit to always send fresh body with current model + key
-  const handleSubmit = (e: FormEvent) => {
-    rawHandleSubmit(e, {
+  // Wrap handleSubmit to always send fresh body with current model + key + baseURL
+  const handleSubmit = (e: FormEvent, attachments?: FileAttachment[]) => {
+    const options: Record<string, unknown> = {
       body: {
         model: selectedModel,
         apiKey: getApiKeyForModel(selectedModel),
+        baseURL: getBaseURLForModel(selectedModel),
       },
-    })
+    }
+    if (attachments && attachments.length > 0) {
+      options.experimental_attachments = attachments.map((a) => ({
+        name: a.name,
+        contentType: a.contentType,
+        url: a.url,
+      }))
+    }
+    rawHandleSubmit(e, options)
   }
 
   const displayMessages = useMemo(
@@ -200,23 +217,27 @@ export function ChatArea({ theme }: Props) {
   }, [])
 
   const [pendingSubmit, setPendingSubmit] = useState(false)
+  const pendingAttachments = useRef<FileAttachment[] | undefined>(undefined)
 
-  function handleSend() {
-    if (!input.trim()) return
+  function handleSend(attachments?: FileAttachment[]) {
+    if (!input.trim() && (!attachments || attachments.length === 0)) return
+    pendingAttachments.current = attachments
     // Create conversation on first message
     if (!activeId) {
       createConversation()
       setPendingSubmit(true)
       return
     }
-    handleSubmit(new Event('submit') as unknown as FormEvent)
+    handleSubmit(new Event('submit') as unknown as FormEvent, attachments)
+    pendingAttachments.current = undefined
   }
 
   // Submit after conversation is created
   useEffect(() => {
     if (pendingSubmit && activeId) {
       setPendingSubmit(false)
-      handleSubmit(new Event('submit') as unknown as FormEvent)
+      handleSubmit(new Event('submit') as unknown as FormEvent, pendingAttachments.current)
+      pendingAttachments.current = undefined
     }
   }, [pendingSubmit, activeId, handleSubmit])
 

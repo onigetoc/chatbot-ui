@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Image, Video, Volume2 } from 'lucide-react'
 import type { ThemeMode } from '../store/chatStore'
 import type { ModelInfo } from '../types'
 
@@ -246,6 +246,20 @@ export function ModelSelector({ models, selected, onSelect, theme }: Props) {
                       >
                         {renderIcon(m.name, m.providerId || m.provider || 'google')}
                         <span className="min-w-0 flex-1 truncate text-sm">{m.name}</span>
+                        {/* Modality indicators */}
+                        {m.inputModalities && (
+                          <span className="flex items-center gap-0.5 shrink-0">
+                            {m.inputModalities.includes('image') && (
+                              <Image className="h-3 w-3 text-zinc-500" aria-label="Supports image input" />
+                            )}
+                            {m.inputModalities.includes('video') && (
+                              <Video className="h-3 w-3 text-zinc-500" aria-label="Supports video input" />
+                            )}
+                            {m.inputModalities.includes('audio') && (
+                              <Volume2 className="h-3 w-3 text-zinc-500" aria-label="Supports audio input" />
+                            )}
+                          </span>
+                        )}
                         <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${color.bg} ${color.text}`}>
                           {m.provider}
                         </span>

@@ -110,3 +110,16 @@ export function loadSelections(): UserSelections {
 export function saveSelections(selections: UserSelections): void {
   localStorage.setItem(SELECTIONS_KEY, JSON.stringify(selections));
 }
+
+/** Get the API base URL for a provider from cached data */
+export function getProviderBaseURL(providerId: string): string | undefined {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return undefined;
+    const entry: CacheEntry = JSON.parse(raw);
+    const provider = entry.data[providerId];
+    return provider?.api || undefined;
+  } catch {
+    return undefined;
+  }
+}

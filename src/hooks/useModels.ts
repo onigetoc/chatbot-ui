@@ -9,31 +9,39 @@ const DEFAULT_MODELS: ModelInfo[] = [
 /** Custom event dispatched when models selection changes */
 export const MODELS_CHANGED_EVENT = 'models-selection-changed'
 
+interface ModelLookupEntry {
+  name: string
+  providerName: string
+  providerId: string
+  inputModalities?: string[]
+  outputModalities?: string[]
+}
+
 /**
- * Build a lookup map: "providerId/modelSlug" → { name, providerName }
+ * Build a lookup map: "providerId/modelSlug" → model info
  * Only indexes models under their own provider — no cross-provider duplication.
  */
-function buildModelLookup(data: ModelsDevData): Map<string, { name: string; providerName: string; providerId: string }> {
-  const map = new Map<string, { name: string; providerName: string; providerId: string }>()
+function buildModelLookup(data: ModelsDevData): Map<string, ModelLookupEntry> {
+  const map = new Map<string, ModelLookupEntry>()
 
   for (const [providerId, providerData] of Object.entries(data)) {
     for (const [modelKey, model] of Object.entries(providerData.models)) {
-      // The canonical ID for this model under THIS provider
-      const canonicalId = `${providerId}/${modelKey}`
-      map.set(canonicalId, {
+      const entry: ModelLookupEntry = {
         name: model.name,
         providerName: providerData.name,
         providerId,
-      })
+        inputModalities: model.modalities?.input,
+        outputModalities: model.modalities?.output,
+      }
+
+      // The canonical ID for this model under THIS provider
+      const canonicalId = `${providerId}/${modelKey}`
+      map.set(canonicalId, entry)
 
       // Also index by the model's own id field if it differs
       const altId = model.id.includes('/') ? model.id : `${providerId}/${model.id}`
       if (!map.has(altId)) {
-        map.set(altId, {
-          name: model.name,
-          providerName: providerData.name,
-          providerId,
-        })
+        map.set(altId, entry)
       }
     }
   }
@@ -85,6 +93,8 @@ export function useModels() {
             name: info.name,
             provider: info.providerName,
             providerId: info.providerId,
+            inputModalities: info.inputModalities,
+            outputModalities: info.outputModalities,
           })
         } else {
           // Model not found in cache — parse from ID

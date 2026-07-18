@@ -19,4 +19,8 @@ export interface ModelInfo {
   name: string
   provider: string
   providerId: string
+  /** Input modalities: "text", "image", "video", "audio" */
+  inputModalities?: string[]
+  /** Output modalities: "text", "image", "audio" */
+  outputModalities?: string[]
 }
