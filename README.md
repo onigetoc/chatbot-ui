@@ -2,6 +2,19 @@
 
 A multi-provider AI chat interface built with React, TypeScript, Vite, and Tailwind CSS. Connect to any OpenAI-compatible LLM provider (Google Gemini, OpenAI, Anthropic, Groq, Mistral, DeepSeek, and more) with a clean, modern UI.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><a href="https://github.com/onigetoc/chatbot-ui/blob/main/public/screenshot-theme-dark.png"><img src="https://raw.githubusercontent.com/onigetoc/chatbot-ui/refs/heads/main/public/screenshot-theme-dark.png" width="100%" alt="Dark theme"></a><br><em>Dark theme</em></td>
+    <td><a href="https://github.com/onigetoc/chatbot-ui/blob/main/public/screenshot-theme-light.png"><img src="https://raw.githubusercontent.com/onigetoc/chatbot-ui/refs/heads/main/public/screenshot-theme-light.png" width="100%" alt="Light theme"></a><br><em>Light theme</em></td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/onigetoc/chatbot-ui/blob/main/public/screenshot-theme-dark-syntax-highlight.png"><img src="https://raw.githubusercontent.com/onigetoc/chatbot-ui/refs/heads/main/public/screenshot-theme-dark-syntax-highlight.png" width="100%" alt="Syntax highlighting"></a><br><em>Syntax highlighted code blocks</em></td>
+    <td><a href="https://github.com/onigetoc/chatbot-ui/blob/main/public/screenshot-setting-models.png"><img src="https://raw.githubusercontent.com/onigetoc/chatbot-ui/refs/heads/main/public/screenshot-setting-models.png" width="100%" alt="Model settings"></a><br><em>Model settings panel</em></td>
+  </tr>
+</table>
+
 ## Features
 
 - **Multi-provider support** — Connect to 15+ LLM providers via OpenAI-compatible API
