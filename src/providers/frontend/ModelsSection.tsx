@@ -10,7 +10,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, RefreshCw, Info } from 'lucide-react';
+import { Check, RefreshCw, Info, Trash2 } from 'lucide-react';
 import { getModelsDevData, clearModelsCache, loadSelections, saveSelections } from './models-cache';
 import { MODELS_CHANGED_EVENT } from '../../hooks/useModels';
 import { POPULAR_PROVIDERS } from './popular-providers';
@@ -71,8 +71,8 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
       const arr: ProviderGroup[] = [];
 
       for (const [providerId, providerData] of Object.entries(modelsDevData)) {
-        const models: ModelInfo[] = Object.values(providerData.models).map((m) => ({
-          id: m.id.includes('/') ? m.id : `${providerId}/${m.id}`,
+        const models: ModelInfo[] = Object.entries(providerData.models).map(([modelKey, m]) => ({
+          id: `${providerId}/${modelKey}`,
           name: m.name,
           provider: providerId,
           context_length: m.limit?.context,
@@ -91,10 +91,33 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
 
       setProviders(arr);
 
-      // Load saved selections
+      // Load saved selections and auto-purge invalid/old-format IDs
       const saved = loadSelections();
       if (saved.models.length > 0) {
-        setSelectedModels(new Set(saved.models));
+        // Build a set of all valid model IDs in the new format
+        const validIds = new Set<string>();
+        for (const group of arr) {
+          for (const m of group.models) {
+            validIds.add(m.id);
+          }
+        }
+
+        // Keep only IDs that exist in the current provider data — drop anything invalid
+        const cleanSet = new Set<string>();
+        for (const id of saved.models) {
+          if (validIds.has(id)) {
+            cleanSet.add(id);
+          }
+          // Invalid IDs are silently dropped (auto-purge)
+        }
+
+        if (cleanSet.size !== saved.models.length) {
+          // Some IDs were purged — persist the clean state
+          saveSelections({ models: Array.from(cleanSet) });
+          window.dispatchEvent(new CustomEvent(MODELS_CHANGED_EVENT));
+        }
+
+        setSelectedModels(cleanSet);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
@@ -106,6 +129,12 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
     clearModelsCache();
     await loadProviders();
     setRefreshing(false);
+  };
+
+  const handleResetSelections = () => {
+    setSelectedModels(new Set());
+    saveSelections({ models: [] });
+    window.dispatchEvent(new CustomEvent(MODELS_CHANGED_EVENT));
   };
 
   const toggleModel = (id: string) => {
@@ -143,10 +172,17 @@ export default function ModelsSection({ isDark, onModelsChanged }: ModelsSection
             {t('modelsSection.subtitle')}
           </p>
         </div>
-        <button type="button" onClick={handleRefresh} disabled={refreshing}
-          className={`rounded-lg border p-2 transition ${isDark ? 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-zinc-200'} ${refreshing ? 'opacity-50' : ''}`}>
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={handleResetSelections} disabled={selectedModels.size === 0}
+            title={t('modelsSection.resetSelections', 'Reset selections')}
+            className={`rounded-lg border p-2 transition ${isDark ? 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-red-900/50 hover:text-red-300 hover:border-red-700' : 'border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300'} ${selectedModels.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={handleRefresh} disabled={refreshing}
+            className={`rounded-lg border p-2 transition ${isDark ? 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-zinc-200'} ${refreshing ? 'opacity-50' : ''}`}>
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Info */}

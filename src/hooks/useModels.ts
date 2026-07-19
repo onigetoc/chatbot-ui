@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { ModelInfo } from '../types'
-import { getModelsDevData, loadSelections, type ModelsDevData } from '../providers/frontend/models-cache'
+import { getModelsDevData, loadSelections, saveSelections, type ModelsDevData } from '../providers/frontend/models-cache'
 
 const DEFAULT_MODELS: ModelInfo[] = [
   { id: 'google/gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite', provider: 'Google', providerId: 'google' },
@@ -34,14 +34,16 @@ function buildModelLookup(data: ModelsDevData): Map<string, ModelLookupEntry> {
         outputModalities: model.modalities?.output,
       }
 
-      // The canonical ID for this model under THIS provider
+      // The canonical ID for this model under THIS provider: "groq/openai/gpt-oss-120b"
       const canonicalId = `${providerId}/${modelKey}`
       map.set(canonicalId, entry)
 
-      // Also index by the model's own id field if it differs
-      const altId = model.id.includes('/') ? model.id : `${providerId}/${model.id}`
-      if (!map.has(altId)) {
-        map.set(altId, entry)
+      // For simple model keys (no slash), also index by providerId/model.id
+      if (!modelKey.includes('/')) {
+        const altId = `${providerId}/${model.id}`
+        if (altId !== canonicalId && !map.has(altId)) {
+          map.set(altId, entry)
+        }
       }
     }
   }
@@ -80,6 +82,7 @@ export function useModels() {
       // Only include models that are EXACTLY in the selections list
       const selectedModels: ModelInfo[] = []
       const seen = new Set<string>()
+      let needsPurge = false
 
       for (const selectedId of selections.models) {
         // Skip duplicates
@@ -97,23 +100,25 @@ export function useModels() {
             outputModalities: info.outputModalities,
           })
         } else {
-          // Model not found in cache — parse from ID
-          const slashIdx = selectedId.indexOf('/')
-          const providerId = slashIdx !== -1 ? selectedId.substring(0, slashIdx) : 'unknown'
-          const modelSlug = slashIdx !== -1 ? selectedId.substring(slashIdx + 1) : selectedId
-          selectedModels.push({
-            id: selectedId,
-            name: modelSlug,
-            provider: providerId,
-            providerId,
-          })
+          // Invalid/old-format ID — silently drop it
+          needsPurge = true
         }
       }
 
       if (selectedModels.length > 0) {
         setModels(selectedModels)
+
+        // Persist purged selections so invalid IDs don't come back
+        if (needsPurge) {
+          saveSelections({ models: selectedModels.map(m => m.id) })
+        }
       } else {
         setModels(DEFAULT_MODELS)
+
+        // All selections were invalid — clear storage
+        if (needsPurge) {
+          saveSelections({ models: [] })
+        }
       }
     } catch (err) {
       setError((err as Error).message)
