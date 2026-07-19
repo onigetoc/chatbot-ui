@@ -17,11 +17,73 @@ function resolveModel(modelSlug: string, providerId: string, baseURL: string, ap
   return provider(modelSlug)
 }
 
+/** Classify an error into a structured error code for the frontend */
+function classifyError(error: unknown): { code: string; message: string; status: number } {
+  if (!(error instanceof Error)) {
+    return { code: 'server_error', message: String(error), status: 500 }
+  }
+
+  const msg = error.message.toLowerCase()
+
+  // Extract response body if available
+  let responseBody = ''
+  if ('responseBody' in error) {
+    responseBody = String((error as Record<string, unknown>).responseBody || '').toLowerCase()
+  }
+
+  const combined = `${msg} ${responseBody}`
+
+  // Rate limit detection
+  if (
+    combined.includes('rate limit') ||
+    combined.includes('rate_limit') ||
+    combined.includes('too many requests') ||
+    combined.includes('429') ||
+    combined.includes('quota exceeded') ||
+    combined.includes('quota_exceeded') ||
+    combined.includes('resource_exhausted') ||
+    combined.includes('tokens per min')
+  ) {
+    return { code: 'rate_limit', message: error.message, status: 429 }
+  }
+
+  // Auth / invalid key detection
+  if (
+    combined.includes('401') ||
+    combined.includes('403') ||
+    combined.includes('unauthorized') ||
+    combined.includes('invalid api key') ||
+    combined.includes('invalid_api_key') ||
+    combined.includes('incorrect api key') ||
+    combined.includes('authentication') ||
+    combined.includes('permission denied') ||
+    combined.includes('invalid x-api-key')
+  ) {
+    return { code: 'auth_error', message: error.message, status: 401 }
+  }
+
+  // Server-side errors (5xx)
+  if (
+    combined.includes('500') ||
+    combined.includes('502') ||
+    combined.includes('503') ||
+    combined.includes('504') ||
+    combined.includes('internal server error') ||
+    combined.includes('service unavailable') ||
+    combined.includes('bad gateway') ||
+    combined.includes('overloaded')
+  ) {
+    return { code: 'server_error', message: error.message, status: 502 }
+  }
+
+  return { code: 'generic', message: error.message, status: 500 }
+}
+
 app.post('/', async (c) => {
   const body = await c.req.json().catch(() => null)
 
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
-    return c.json({ error: 'messages array is required' }, 400)
+    return c.json({ error: 'messages array is required', code: 'generic' }, 400)
   }
 
   const { messages, model: modelId, apiKey, baseURL } = body
@@ -29,11 +91,11 @@ app.post('/', async (c) => {
   console.log('[chat] request:', { model: modelId, hasApiKey: !!apiKey, hasBaseURL: !!baseURL, messagesCount: messages.length })
 
   if (!apiKey) {
-    return c.json({ error: 'API key is required. Configure one in Settings > API Keys.' }, 400)
+    return c.json({ error: 'API key is required. Configure one in Settings > API Keys.', code: 'missing_api_key' }, 400)
   }
 
   if (!baseURL) {
-    return c.json({ error: 'Provider base URL is missing. Re-select your model in Settings.' }, 400)
+    return c.json({ error: 'Provider base URL is missing. Re-select your model in Settings.', code: 'generic' }, 400)
   }
 
   // Parse "provider/model-slug"
@@ -52,34 +114,19 @@ app.post('/', async (c) => {
       },
     })
 
-    // Consume the stream to detect errors before returning
-    // Use getErrorMessage to forward real API errors to client
     return result.toDataStreamResponse({
       getErrorMessage: (error) => {
-        if (error instanceof Error) {
-          console.error('[chat] stream error:', error.message)
-          // Try to extract the actual API error
-          if ('responseBody' in error) {
-            const respBody = (error as Record<string, unknown>).responseBody
-            console.error('[chat] response body:', respBody)
-            return String(respBody || error.message)
-          }
-          if ('cause' in error && error.cause) {
-            console.error('[chat] cause:', error.cause)
-          }
-          return error.message
-        }
-        console.error('[chat] stream error (unknown):', error)
-        return String(error)
+        const classified = classifyError(error)
+        console.error('[chat] stream error:', classified.code, classified.message)
+
+        // Return a JSON-encoded error so the frontend can parse it
+        return JSON.stringify({ code: classified.code, message: classified.message })
       },
     })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[chat] error:', message)
-    if (err instanceof Error && 'cause' in err) {
-      console.error('[chat] cause:', err.cause)
-    }
-    return c.json({ error: message }, 500)
+    const classified = classifyError(err)
+    console.error('[chat] error:', classified.code, classified.message)
+    return c.json({ error: classified.message, code: classified.code }, classified.status as 400)
   }
 })
 

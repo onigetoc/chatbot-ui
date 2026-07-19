@@ -82,5 +82,18 @@
     "keySaved": "Clé {{name}} enregistrée",
     "keyRemoved": "Clé {{name}} supprimée",
     "keyAdded": "Clé {{name}} ajoutée depuis {{envVar}}"
+  },
+  "errors": {
+    "missingApiKeyTitle": "Clé API requise",
+    "missingApiKeyDesc": "Aucune clé API configurée pour ce fournisseur. Ajoutez-en une dans les Paramètres pour commencer à chatter.",
+    "authErrorTitle": "Authentification échouée",
+    "authErrorDesc": "Votre clé API a été rejetée par le fournisseur. Elle est peut-être invalide ou expirée.",
+    "rateLimitTitle": "Limite d'utilisation atteinte",
+    "rateLimitDesc": "Vous avez atteint la limite d'utilisation de ce modèle. Attendez un moment ou changez de modèle.",
+    "serverErrorTitle": "Erreur serveur",
+    "serverErrorDesc": "Une erreur est survenue du côté du fournisseur. Réessayez dans quelques secondes.",
+    "genericTitle": "Erreur",
+    "genericDesc": "Une erreur inattendue est survenue. Veuillez réessayer.",
+    "openSettings": "Ouvrir les paramètres API"
   }
 }

@@ -16,6 +16,7 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "^0.2.16",
     "@radix-ui/react-dialog": "^1.1.19",
+    "@radix-ui/react-scroll-area": "^1.2.9",
     "ai": "^4.3.19",
     "clsx": "^2.1.1",
     "hono": "^4.0.0",

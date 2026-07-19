@@ -4,17 +4,19 @@ import { ArrowDown, MessageSquare } from 'lucide-react'
 import { useChat } from 'ai/react'
 import { MemoizedMessageBubble, MemoizedTypingIndicator } from './MessageBubble'
 import { ComposerBar, type FileAttachment, type ComposerBarHandle } from './ComposerBar'
-import { Toast } from './Toast'
 import { IconTooltip } from './IconTooltip'
+import { ScrollArea } from './ui/scroll-area'
 import { useChatStore, type ThemeMode } from '../store/chatStore'
 import { ChatHeader } from './ChatHeader'
 import { ChatTOC } from './ChatTOC'
+import { ChatErrorBanner, type ChatErrorCode, type ChatErrorInfo } from './ChatErrorBanner'
 import { getStoredApiKey } from '../providers/frontend/ApiKeysSection'
 import { getProviderBaseURL } from '../providers/frontend/models-cache'
 import type { Message } from '../types'
 
 interface Props {
   theme: ThemeMode
+  onOpenSettings?: () => void
 }
 
 interface ChatMessageListProps {
@@ -52,7 +54,49 @@ function toStoreMessages(msgs: { id: string; role: string; content: string }[]):
     }))
 }
 
-export function ChatArea({ theme }: Props) {
+/** Try to parse a structured error from the server response */
+function parseErrorMessage(raw: string): ChatErrorInfo {
+  // The server may return JSON like: {"code":"rate_limit","message":"..."}
+  // Or the error might be wrapped in the useChat error message
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed.code && typeof parsed.code === 'string') {
+      return { code: parsed.code as ChatErrorCode, message: parsed.message || parsed.error }
+    }
+    if (parsed.error && typeof parsed.error === 'string') {
+      // Non-stream JSON error from server
+      const code = parsed.code as ChatErrorCode || classifyErrorMessage(parsed.error)
+      return { code, message: parsed.error }
+    }
+  } catch {
+    // Not JSON — try to classify from the raw message text
+  }
+
+  // Try to find embedded JSON in the error message
+  const jsonMatch = raw.match(/\{[^{}]*"code"\s*:\s*"[^"]+"/)?.[0]
+  if (jsonMatch) {
+    try {
+      const match = JSON.parse(jsonMatch + '}')
+      if (match.code) {
+        return { code: match.code as ChatErrorCode, message: match.message || raw }
+      }
+    } catch { /* ignore */ }
+  }
+
+  return { code: classifyErrorMessage(raw), message: raw }
+}
+
+/** Classify an error from its message text when no structured code is available */
+function classifyErrorMessage(msg: string): ChatErrorCode {
+  const lower = msg.toLowerCase()
+  if (lower.includes('api key') || lower.includes('apikey') || lower.includes('missing_api_key')) return 'missing_api_key'
+  if (lower.includes('unauthorized') || lower.includes('401') || lower.includes('403') || lower.includes('invalid') || lower.includes('auth')) return 'auth_error'
+  if (lower.includes('rate limit') || lower.includes('rate_limit') || lower.includes('429') || lower.includes('quota') || lower.includes('too many')) return 'rate_limit'
+  if (lower.includes('500') || lower.includes('502') || lower.includes('503') || lower.includes('server error') || lower.includes('overloaded')) return 'server_error'
+  return 'generic'
+}
+
+export function ChatArea({ theme, onOpenSettings }: Props) {
   const activeId = useChatStore((s) => s.activeId)
   const conversations = useChatStore((s) => s.conversations)
   const selectedModel = useChatStore((s) => s.selectedModel)
@@ -69,7 +113,7 @@ export function ChatArea({ theme }: Props) {
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [isNearBottom, setIsNearBottom] = useState(true)
   const [composerHeight, setComposerHeight] = useState(136)
-  const [chatError, setChatError] = useState<string | null>(null)
+  const [chatError, setChatError] = useState<ChatErrorInfo | null>(null)
   const isDark = theme === 'dark'
 
   useEffect(() => {
@@ -128,7 +172,8 @@ export function ChatArea({ theme }: Props) {
     initialMessages: initialMessagesRef.current,
     onError: (error) => {
       console.error('[chat] useChat error:', error.message)
-      setChatError((prev) => prev ? prev : (error.message || 'An error occurred'))
+      const errorInfo = parseErrorMessage(error.message)
+      setChatError((prev) => prev ? prev : errorInfo)
     },
     onFinish: () => {
       const conversationId = activeIdRef.current
@@ -220,6 +265,14 @@ export function ChatArea({ theme }: Props) {
 
   const handleSend = useCallback((text: string, attachments?: FileAttachment[]) => {
     if (!text.trim() && (!attachments || attachments.length === 0)) return
+
+    // Frontend API key check — block send if no key configured for the provider
+    const apiKey = getApiKeyForModel(selectedModel)
+    if (!apiKey) {
+      setChatError({ code: 'missing_api_key' })
+      return
+    }
+
     pendingText.current = text
     pendingAttachments.current = attachments
     // Create conversation on first message
@@ -231,7 +284,7 @@ export function ChatArea({ theme }: Props) {
     submitMessage(text, attachments)
     pendingText.current = ''
     pendingAttachments.current = undefined
-  }, [activeId, createConversation, submitMessage])
+  }, [activeId, createConversation, submitMessage, selectedModel, getApiKeyForModel])
 
   // Submit after conversation is created
   useEffect(() => {
@@ -275,7 +328,7 @@ export function ChatArea({ theme }: Props) {
       )}
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="chat-scroll relative flex-1 overflow-y-auto px-4 py-8">
+      <ScrollArea className="relative flex-1" viewportRef={scrollContainerRef} viewportClassName="px-4 py-8">
         {showEmpty ? (
           <div className={`flex h-full flex-col items-center justify-center text-center ${theme === 'dark' ? 'text-zinc-500' : 'text-zinc-500'}`}>
             <MessageSquare size={48} className="mb-4 opacity-30" />
@@ -292,7 +345,7 @@ export function ChatArea({ theme }: Props) {
           />
         )}
 
-      </div>
+      </ScrollArea>
 
       {showScrollToBottom && !showEmpty && (
         <div
@@ -312,6 +365,16 @@ export function ChatArea({ theme }: Props) {
         </div>
       )}
 
+      {/* Error banner */}
+      {chatError && (
+        <ChatErrorBanner
+          error={chatError}
+          theme={theme}
+          onDismiss={() => setChatError(null)}
+          onOpenSettings={onOpenSettings}
+        />
+      )}
+
       {/* Composer */}
       <div ref={composerContainerRef}>
         <ComposerBar
@@ -322,16 +385,6 @@ export function ChatArea({ theme }: Props) {
           theme={theme}
         />
       </div>
-
-      {/* Error toast */}
-      {chatError && (
-        <Toast
-          message={chatError}
-          type="error"
-          theme={theme}
-          onDismiss={() => setChatError(null)}
-        />
-      )}
     </div>
   )
 }

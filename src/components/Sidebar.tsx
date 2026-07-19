@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { MessageSquarePlus, MoonStar, MoreHorizontal, Pencil, Settings, SunMedium, Trash2 } from 'lucide-react'
 import { useChatStore } from '../store/chatStore'
 import { IconTooltip } from './IconTooltip'
+import { ScrollArea } from './ui/scroll-area'
 
 interface SidebarProps {
   isOpen: boolean
@@ -171,7 +172,8 @@ export function Sidebar({ isOpen, onClose, onOpenSettings }: SidebarProps) {
         </div>
 
         {/* Conversation list */}
-        <nav className="flex-1 overflow-y-auto px-2 pb-3">
+        <ScrollArea className="flex-1">
+          <nav className="px-2 pb-3">
           {conversations.length === 0 && (
             <p className={`px-3 py-2 text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
               {t('sidebar.noConversations')}
@@ -220,7 +222,8 @@ export function Sidebar({ isOpen, onClose, onOpenSettings }: SidebarProps) {
               )}
             </div>
           ))}
-        </nav>
+          </nav>
+        </ScrollArea>
 
         {/* Settings button at bottom */}
         <div className={`border-t px-3 py-3 ${isDark ? 'border-zinc-800' : 'border-zinc-300'}`}>

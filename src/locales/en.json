@@ -82,5 +82,18 @@
     "keySaved": "{{name}} key saved",
     "keyRemoved": "{{name}} key removed",
     "keyAdded": "{{name}} key added from {{envVar}}"
+  },
+  "errors": {
+    "missingApiKeyTitle": "API Key Required",
+    "missingApiKeyDesc": "No API key configured for this provider. Add one in Settings to start chatting.",
+    "authErrorTitle": "Authentication Failed",
+    "authErrorDesc": "Your API key was rejected by the provider. It may be invalid or expired.",
+    "rateLimitTitle": "Rate Limit Reached",
+    "rateLimitDesc": "You've hit the usage limit for this model. Wait a moment and try again, or switch to another model.",
+    "serverErrorTitle": "Server Error",
+    "serverErrorDesc": "Something went wrong on the provider's side. Try again in a few seconds.",
+    "genericTitle": "Error",
+    "genericDesc": "An unexpected error occurred. Please try again.",
+    "openSettings": "Open API Keys Settings"
   }
 }

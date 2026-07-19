@@ -8,6 +8,60 @@ interface Props {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
 }
 
+/** Sub-component that scrolls to the active item on mount */
+function TocPopup({
+  userMessages,
+  activeMessageId,
+  isDark,
+  onScrollToMessage,
+}: {
+  userMessages: Message[]
+  activeMessageId: string | null
+  isDark: boolean
+  onScrollToMessage: (id: string) => void
+}) {
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!activeMessageId || !listRef.current) return
+    const activeBtn = listRef.current.querySelector(`[data-toc-id="${activeMessageId}"]`)
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ block: 'center' })
+    }
+  }, []) // only on mount
+
+  return (
+    <div
+      ref={listRef}
+      className={`toc-scroll absolute right-0 max-h-[70vh] w-72 overflow-y-auto rounded-xl border px-2 py-2 shadow-lg ${
+        isDark
+          ? 'border-zinc-700 bg-zinc-900'
+          : 'border-zinc-200 bg-white shadow-md'
+      }`}
+    >
+      {userMessages.map((msg) => (
+        <button
+          key={msg.id}
+          type="button"
+          data-toc-id={msg.id}
+          onClick={() => onScrollToMessage(msg.id)}
+          className={`w-full rounded-lg px-3 py-2 text-left text-xs truncate transition-colors ${
+            msg.id === activeMessageId
+              ? isDark
+                ? 'bg-zinc-700 text-white'
+                : 'bg-zinc-100 text-zinc-900 font-medium'
+              : isDark
+                ? 'text-zinc-300 hover:bg-zinc-800'
+                : 'text-zinc-700 hover:bg-zinc-50'
+          }`}
+        >
+          {msg.content.length > 50 ? msg.content.slice(0, 50) + '...' : msg.content}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export const ChatTOC = memo(function ChatTOC({ messages, theme, scrollContainerRef }: Props) {
   const [showList, setShowList] = useState(false)
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null)
@@ -115,32 +169,12 @@ export const ChatTOC = memo(function ChatTOC({ messages, theme, scrollContainerR
       <div className="relative flex items-center">
         {/* Popup list */}
         {showList && (
-          <div
-            className={`absolute right-0 max-h-[70vh] w-72 overflow-y-auto rounded-xl border px-2 py-2 shadow-lg ${
-              isDark
-                ? 'border-zinc-700 bg-zinc-900'
-                : 'border-zinc-200 bg-white shadow-md'
-            }`}
-          >
-            {userMessages.map((msg) => (
-              <button
-                key={msg.id}
-                type="button"
-                onClick={() => scrollToMessage(msg.id)}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs truncate transition-colors ${
-                  msg.id === activeMessageId
-                    ? isDark
-                      ? 'bg-zinc-700 text-white'
-                      : 'bg-zinc-100 text-zinc-900 font-medium'
-                    : isDark
-                      ? 'text-zinc-300 hover:bg-zinc-800'
-                      : 'text-zinc-700 hover:bg-zinc-50'
-                }`}
-              >
-                {msg.content.length > 50 ? msg.content.slice(0, 50) + '...' : msg.content}
-              </button>
-            ))}
-          </div>
+          <TocPopup
+            userMessages={userMessages}
+            activeMessageId={activeMessageId}
+            isDark={isDark}
+            onScrollToMessage={scrollToMessage}
+          />
         )}
 
         {/* Bars */}

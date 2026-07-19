@@ -40,7 +40,7 @@ export default function App() {
         >
           <PanelLeft size={20} />
         </button>
-        <ChatArea theme={theme} />
+        <ChatArea theme={theme} onOpenSettings={() => setSettingsOpen(true)} />
       </main>
 
       <SettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
